@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+from tools.analyse_stream import Read
 import csv
 
 
@@ -53,10 +53,10 @@ def amp_info(fps_total, auto_total):
     传入 fps_total [[频点数组1] ... [频点数组n]], 长度为 frame_total, auto_total为门限，同理
     data_len为一帧频点数量
     输出AmpStruct结构体数组
-    虽然速度还行，不过潜意识感觉效率很辣鸡
 
     """
 
+    print('calculating...')
     # 提前开辟数组空间
     sig_info = []
     for i in range(len(fps_total[0])):
@@ -71,6 +71,36 @@ def amp_info(fps_total, auto_total):
                 sig_info[j].amp_dict[fps_total[i][j]] += 1
             if fps_total[i][j] > auto_total[i][j]:
                 sig_info[j].occupancy += 1
-        print(i)
+    print('calculated...')
 
     return sig_info
+
+
+def freq_avg(file, avg_count):
+    """
+
+    传入avg_count帧数据，返回平均值
+
+    """
+
+    np_data_total = []
+    counter = avg_count
+    for frame in Read(file, 'fsc').header_payload():
+
+        fp_data = np.array(list(map(lambda x: float(x) / 10, frame[1][0][-1])))
+        np_data_total.append(fp_data)
+
+        counter -= 1
+        if not counter:
+
+            tmp = np.zeros(shape=(1,len(np_data_total[0])))
+            for i in np_data_total:
+                tmp += i
+
+            fp_data = (tmp/avg_count).round(1)
+
+            counter = avg_count
+            np_data_total = []
+
+            frame[1][0][9] = fp_data[0]
+            yield frame

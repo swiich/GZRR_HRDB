@@ -1,5 +1,4 @@
 import hdfs
-import os
 
 # upload()函数中Progress-回调函数跟踪进度
 # length指定读取字节数长度
