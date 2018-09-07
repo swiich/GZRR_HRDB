@@ -1,3 +1,7 @@
+# coding=utf-8
+
+
+# 代码有任何变动需要同时修改 /usr/local/python3/lib/python3.6/hbase_connector.py
 import happybase
 
 

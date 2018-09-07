@@ -7,11 +7,11 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    # TODO: 监控文件变动
-    file = 'test.bin'
+    # TODO: 将固定文件改为监控文件变动
+    file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
+    # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
     if not os.path.exists(file):
-        file = download_file('/data/fscan/11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN', file)
-        # file = download_file('/data/fscan/11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN', file)
+        file = download_file('/data/fscan/%s' % file, file)
 
     task_start_time = time.time()
 
@@ -21,6 +21,8 @@ if __name__ == '__main__':
 
     time_tmp = time.localtime(time.mktime(time.strptime(freq_avg(file, 10).__next__()[0][3], '%Y-%m-%d %H:%M:%S.%f')))
     time_tmp = time_tmp.tm_min
+
+    mfid = file.split('-')[0]
 
     for frame in freq_avg(file, 10):
         frame_count += 1
@@ -51,7 +53,7 @@ if __name__ == '__main__':
 
                 sigDetectResult = np.array([cf, cfi, cfa, snr, sb])
                 # 将信号写入文件
-                signal_to_csv(frame[0][3], sig_count, sigDetectResult)
+                # signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
 
             else:
                 print(sig_count)
@@ -68,9 +70,17 @@ if __name__ == '__main__':
             time_tmp = time_struct.tm_min
 
             # 幅度值字典写入文件
-            for i in amp_struct_info:
+            for amp_struct in amp_struct_info:
+                scan_count = 0
+                for j in amp_struct.amp_dict.values():
+                    scan_count += j
                 with open('amp_info.min', 'a') as f:
-                    f.write('{0}|{1}|{2}|{3}'.format(time_str, i.sig_index, i.amp_dict, i.occupancy))
+                    f.write('{0}|{1}|{2}|{3}|{4}|{5}|{6}'.format(
+                        mfid, time_str.split('.')[0], 4, amp_struct.sig_index,
+                        amp_struct.amp_dict, amp_struct.occupancy, scan_count)
+                            )
                     f.write('\n')
+
+
 
     print('任务总耗时 {0}'.format(time.time() - task_start_time))

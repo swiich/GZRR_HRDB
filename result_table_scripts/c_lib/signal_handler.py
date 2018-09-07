@@ -33,17 +33,17 @@ def single_signal_return(sig_count, sigdetectres):
         yield cf, cfi, cfa, snr, sb
 
 
-def signal_to_csv(time, sig_count, sigdetectres):
+def signal_to_csv(mfid, time, sig_count, sigdetectres):
     """
 
     将调用clib后信息写入文件
 
     """
     res = single_signal_return(sig_count, sigdetectres)
-    with open('signal.csv', 'a') as f:
+    with open('signal', 'a') as f:
         w = csv.writer(f)
         for i in res:
-            tmp = ('11000001111111', time, *i)
+            tmp = (mfid, time, *i)
             w.writerow(tmp)
 
 

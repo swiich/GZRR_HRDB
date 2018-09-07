@@ -1,5 +1,7 @@
 # coding=utf-8
 
+
+# 代码有任何变动需要同时修改 /usr/local/python3/lib/python3.6/hive_connector.py
 from impala.dbapi import connect
 
 
