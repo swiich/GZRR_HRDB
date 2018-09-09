@@ -35,6 +35,8 @@ class Read:
                 payload = self.fsc(file, pl)
             elif self.file_type == 'gps':
                 payload = self.position(file, pl)
+            elif self.file_type == 'antenna':
+                payload = self.antenna(file, pl)
 
             head = [leader, ver, stc, ts_str, pl, el]
             yield head, payload
@@ -98,20 +100,48 @@ class Read:
         """ gps数据 """
         payload = []
         while payload_len:
-            dt = struct.unpack('b', file.read(1))
-            dl = struct.unpack('I', file.read(4))
+            dt, = struct.unpack('b', file.read(1))
+            dl, = struct.unpack('I', file.read(4))
 
-            satellite_count = struct.unpack('b', file.read(1))
-            height = struct.unpack('i', file.read(4))
-            speed = struct.unpack('I', file.read(4))
-            longitude = struct.unpack('d', file.read(8))
-            latitude = struct.unpack('d', file.read(8))
-            declination = struct.unpack('h', file.read(2))
+            satellite_count, = struct.unpack('b', file.read(1))
+            height, = struct.unpack('i', file.read(4))
+            speed, = struct.unpack('I', file.read(4))
+            longitude, = struct.unpack('d', file.read(8))
+            latitude, = struct.unpack('d', file.read(8))
+            declination, = struct.unpack('h', file.read(2))
 
             tmp = (dt, dl, satellite_count, height, speed, longitude, latitude, declination)
             payload.append(tmp)
 
             payload_len -= dl + 5
         return payload
+
+    @staticmethod
+    def antenna(file, payload_len):
+        """ 天线因子 """
+        payload = []
+        while payload_len:
+            dt, = struct.unpack('b', file.read(1))
+            dl, = struct.unpack('I', file.read(4))
+
+            freq_band_index, = struct.unpack('B', file.read(1))
+            freq_total, = struct.unpack('I', file.read(4))
+            start_freq, = struct.unpack('d', file.read(8))
+            stop_freq, = struct.unpack('d', file.read(8))
+            step, = struct.unpack('f', file.read(4))
+            freq_index, = struct.unpack('I', file.read(4))
+            freq_count, = struct.unpack('I', file.read(4))
+            spectrum = []
+            for i in range(freq_count):
+                spectrum.append(struct.unpack('h', file.read(2))[0])
+
+            tmp = (dt, dl, freq_band_index, freq_total, start_freq, stop_freq, step, freq_index, freq_count, spectrum)
+            payload.append(tmp)
+
+            payload_len -= dl + 5
+
+        return payload
+
+
 
 
