@@ -11,7 +11,7 @@ def download_file(hdfs_location, local):
     :param local: 本地路径+文件名
     :return:
     """
-    client = hdfs.Client('http://172.39.8.61:50070', root='/', timeout=10)
+    client = hdfs.Client('http://172.39.8.62:50070', root='/', timeout=10)
     file_local = '{0}'.format(local)
     try:
         with client.read(hdfs_location) as r:

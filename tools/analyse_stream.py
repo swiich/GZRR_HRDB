@@ -38,7 +38,7 @@ class Read:
             elif self.file_type == 'antenna':
                 payload = self.antenna(file, pl)
 
-            head = [leader, ver, stc, ts_str, pl, el]
+            head = (leader, ver, stc, ts_str, pl, el)
             yield head, payload
 
         file.close()
@@ -62,8 +62,8 @@ class Read:
             for i in range(freq_frame_amount):
                 spectrum.append(np.frombuffer(file.read(2), np.int16)[0])
 
-            tmp = (dt, dl, number, freq_total, start_freq, step, freq_number,
-                   freq_frame_amount, spectrum)
+            tmp = [dt, dl, number, freq_total, start_freq, step, freq_number,
+                   freq_frame_amount, spectrum]
             payload.append(tmp)
 
             payload_len -= dl + 5
@@ -88,8 +88,8 @@ class Read:
             for i in range(frame_channel_total):
                 spectrum.append(np.frombuffer(file.read(2), np.int16)[0])
 
-            tmp = (dt, dl, freq_sec_num, channels_total, start_freq, end_freq,
-                   start_freq_num, step, frame_channel_total, spectrum)
+            tmp = [dt, dl, freq_sec_num, channels_total, start_freq, end_freq,
+                   start_freq_num, step, frame_channel_total, spectrum]
             payload.append(tmp)
             file.read(4)                       # 原始数据文件payload data部分少4个字节,跳过
             payload_len -= dl + 5
@@ -104,13 +104,13 @@ class Read:
             dl, = struct.unpack('I', file.read(4))
 
             satellite_count, = struct.unpack('b', file.read(1))
-            height, = struct.unpack('i', file.read(4))
-            speed, = struct.unpack('I', file.read(4))
+            height, = struct.unpack('h', file.read(2))
+            speed, = struct.unpack('H', file.read(2))
             longitude, = struct.unpack('d', file.read(8))
             latitude, = struct.unpack('d', file.read(8))
             declination, = struct.unpack('h', file.read(2))
 
-            tmp = (dt, dl, satellite_count, height, speed, longitude, latitude, declination)
+            tmp = [dt, dl, satellite_count, height, speed, longitude, latitude, declination]
             payload.append(tmp)
 
             payload_len -= dl + 5
@@ -135,7 +135,7 @@ class Read:
             for i in range(freq_count):
                 spectrum.append(struct.unpack('h', file.read(2))[0])
 
-            tmp = (dt, dl, freq_band_index, freq_total, start_freq, stop_freq, step, freq_index, freq_count, spectrum)
+            tmp = [dt, dl, freq_band_index, freq_total, start_freq, stop_freq, step, freq_index, freq_count, spectrum]
             payload.append(tmp)
 
             payload_len -= dl + 5

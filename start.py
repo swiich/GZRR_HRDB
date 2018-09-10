@@ -7,7 +7,7 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    # TODO: 将固定文件改为监控文件变动
+    # TODO: 将固定文件改为监控文件变动      统计监测数据基础表代码      amp_info中加上起始频率，步长，幅度门限均值   监测频点内容
     file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
     # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
     if not os.path.exists(file):
@@ -19,10 +19,14 @@ if __name__ == '__main__':
     fp_data_total = []
     auto_total = []
 
-    time_tmp = time.localtime(time.mktime(time.strptime(freq_avg(file, 10).__next__()[0][3], '%Y-%m-%d %H:%M:%S.%f')))
+    time_tmp = time.localtime(time.mktime(time.strptime(next(freq_avg(file, 10))[0][3], '%Y-%m-%d %H:%M:%S.%f')))
     time_tmp = time_tmp.tm_min
 
     mfid = file.split('-')[0]
+    frame = next(freq_avg(file, 10))
+    start_freq = frame[1][0][4]/1000
+    stop_freq = frame[1][0][5]/1000
+    step = frame[1][0][7]
 
     for frame in freq_avg(file, 10):
         frame_count += 1
@@ -80,7 +84,5 @@ if __name__ == '__main__':
                         amp_struct.amp_dict, amp_struct.occupancy, scan_count)
                             )
                     f.write('\n')
-
-
 
     print('任务总耗时 {0}'.format(time.time() - task_start_time))

@@ -50,8 +50,6 @@ def signal_to_csv(mfid, time, sig_count, sigdetectres):
 def amp_info(fps_total, auto_total):
     """
 
-    传入 fps_total [[频点数组1] ... [频点数组n]], 长度为 frame_total, auto_total为门限，同理
-    data_len为一帧频点数量
     输出AmpStruct结构体数组
 
     """
