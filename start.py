@@ -7,8 +7,12 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    # TODO: 将固定文件改为监控文件变动      统计监测数据基础表代码      amp_info中加上起始频率，步长，幅度门限均值   监测频点内容
-    file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
+    # TODO: 将固定文件改为监控文件变动
+    # TODO: 描述文件表 task area 原本内容，insert into table
+    # TODO: 统计监测数据基础表代码
+    # TODO: amp_info中加上起始频率，步长，幅度门限均值
+    # TODO: 自动化
+    file = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
     # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
     if not os.path.exists(file):
         file = download_file('/data/fscan/%s' % file, file)

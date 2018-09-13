@@ -35,8 +35,3 @@ def occupancy_frequencband(s_type, s_time):
         return round(occ_count/scan_count, 2)
     else:
         return None
-
-
-def get_bt_id(freq_band, dbname):
-    cursor = hc.get_hive_cursor('172.39.8.62', 'rmdsd')
-    sql = ''

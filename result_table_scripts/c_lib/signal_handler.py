@@ -91,7 +91,7 @@ def freq_avg(file, avg_count):
         counter -= 1
         if not counter:
 
-            tmp = np.zeros(shape=(1,len(np_data_total[0])))
+            tmp = np.zeros(shape=(1, len(np_data_total[0])))
             for i in np_data_total:
                 tmp += i
 

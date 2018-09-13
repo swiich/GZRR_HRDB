@@ -60,7 +60,12 @@
 # # a = str(content)
 # # with open('test.b', 'w') as f:
 # #     f.write(encode(a))
-#
-#
-#
 
+import struct
+
+a = 0
+with open('amp.bin', 'wb') as f:
+    f.write()
+    # for i in range(100):
+    #     f.write(struct.pack('i', a))
+    #     f.write(struct.pack('4h', a,a,a,a))
