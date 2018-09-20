@@ -134,7 +134,8 @@ def get_businessid(start_freq, stop_freq):
     if not res:
         res = uuid.uuid1()
         sql = 'insert into table rmbt_service_freqdetail ' \
-              'values ("{0}","","自定义频段",{1},{2},"NULL")'.format(res, start_freq, stop_freq)
+              'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
+               res, start_freq/1000, stop_freq/1000)
         hc.execute_sql_insert(cursor, sql)
 
     return res

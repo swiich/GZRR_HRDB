@@ -1,17 +1,15 @@
 from socket_d.py_hdfs.py_hdfs import download_file
-
 import os
-from result_table_scripts.c_lib.c_invoker import CInvoker
-from result_table_scripts.c_lib.signal_handler import *
+from tools.c_lib.c_invoker import CInvoker
+from tools.signal_handler import *
 import time
 import numpy as np
 
 
 if __name__ == '__main__':
-    # TODO: 将固定文件改为监控文件变动
-    # TODO: 描述文件表 task area 原本内容，insert into table
-    # TODO: 统计监测数据基础表代码
-    # TODO: 自动化
+    # TODO: 将固定文件改为监控文件变动, 自动化
+    # TODO: 描述文件内容，insert into table
+    # TODO: 解析天线因子存入表
     file = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
     # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
     if not os.path.exists(file):
@@ -33,7 +31,7 @@ if __name__ == '__main__':
     step = frame[1][0][7]
     # 通过起始结束频率查询监测业务编号
     bid_tmp = get_businessid(start_freq, stop_freq)
-    businessid = bid_tmp[0][0] if bid_tmp is list else bid_tmp
+    businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
 
     for frame in freq_avg(file, 10):
         frame_count += 1
@@ -86,7 +84,7 @@ if __name__ == '__main__':
                     scan_count += j
 
                 with open('amp_info.min', 'a') as f:
-                    f.write('{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}'.format(
+                    f.write('{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}|{10}|{11}'.format(
                         businessid, mfid, time_str.split('.')[0], 4, amp_struct.sig_index, start_freq, stop_freq, step,
                         amp_struct.amp_dict, amp_struct.occupancy, scan_count, amp_struct.threshold_avg
                     ))

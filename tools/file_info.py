@@ -3,6 +3,7 @@ import os
 import numpy as np
 import xml.etree.cElementTree as Et
 from time import strftime, strptime
+from socket_d.hive import hive_connector as hc
 
 
 class MBasicDataTable(Read):
@@ -70,17 +71,29 @@ def get_file_info(file):
     return result
 
 
-def file_index(file, file_des):
+def file_index(file, file_des, return_type):
     """
 
     生成文件索引表内容, 地区返回内容表， 任务返回内容表
 
     """
-    des_result = xml_parser(file_des)
+    des_result = xml_parser(file_des, return_type)
     file_result = get_file_info(file)
 
+    if return_type == 'file_index':
+        result = (des_result[0], des_result[1], file_result[4], des_result[2], file_result[0], file_result[1],
+                  des_result[3], des_result[4], file_result[3],
+                  '/data/fscan&spectrum/'+os.path.basename(file), file_result[2])
+    elif return_type == 'device_info':
+        result = (des_result[0], file_result[4], des_result[1], des_result[2], des_result[3], des_result[4])
+    elif return_type == 'task_info':
+        result = (des_result[0], des_result[1], file_result[4], des_result[2], des_result[3],
+                  des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8])
 
-def xml_parser(xml_file):
+    return result
+
+
+def xml_parser(xml_file, return_type):
     """
 
     解析描述文件
@@ -92,13 +105,29 @@ def xml_parser(xml_file):
     mfname = xml_root.find('mfname').text
     equipment = xml_root.find('equipment')
     equid = equipment.find('equid').text
-    equiname = equipment.find('equname').text
+    equname = equipment.find('equname').text
     task = equipment.find('task')
     dataguid = task.find('dataguid').text
     taskid = task.find('taskid').text
     t_start_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('starttime').text, "%Y/%m/%d %H:%M:%S")))
     t_stop_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('stoptime').text, "%Y/%m/%d %H:%M:%S")))
+    feature = task.find('feature').text
+    userid = task.find('userid').text
+    appid = task.find('appid').text
 
-    result = (dataguid, taskid, equid, t_start_time, t_stop_time)
+    paramxml = Et.tostring(task.find('paramxml'), 'utf-8').decode('gbk')
+
+    if return_type == 'file_index':
+        result = (dataguid, taskid, equid, t_start_time, t_stop_time)
+    elif return_type == 'task_info':
+        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml, appid, dataguid)
+    elif return_type == 'device_info':
+        result = (areacode, mfname, equid, equname, feature)
+    else:
+        raise ValueError
+
     return result
 
+
+def des_save(file):
+    pass
