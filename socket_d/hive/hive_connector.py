@@ -18,3 +18,9 @@ def get_hive_cursor(host, database):
 def execute_sql(cursor, sql):
     cursor.execute(sql)
     return cursor.fetchall()
+
+
+def execute_sql_insert(cursor, sql):
+    cursor.execute(sql)
+
+

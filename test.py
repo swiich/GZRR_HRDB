@@ -61,11 +61,9 @@
 # # with open('test.b', 'w') as f:
 # #     f.write(encode(a))
 
-import struct
+import numpy as np
 
-a = 0
-with open('amp.bin', 'wb') as f:
-    f.write()
-    # for i in range(100):
-    #     f.write(struct.pack('i', a))
-    #     f.write(struct.pack('4h', a,a,a,a))
+a = [1,2,6,7,3,7,2,8,5,21]
+for i in a:
+    i + 1
+print(a)

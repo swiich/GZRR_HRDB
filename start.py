@@ -1,7 +1,8 @@
 from socket_d.py_hdfs.py_hdfs import download_file
+
 import os
 from result_table_scripts.c_lib.c_invoker import CInvoker
-from result_table_scripts.c_lib.signal_handler import amp_info, signal_to_csv, freq_avg
+from result_table_scripts.c_lib.signal_handler import *
 import time
 import numpy as np
 
@@ -10,7 +11,6 @@ if __name__ == '__main__':
     # TODO: 将固定文件改为监控文件变动
     # TODO: 描述文件表 task area 原本内容，insert into table
     # TODO: 统计监测数据基础表代码
-    # TODO: amp_info中加上起始频率，步长，幅度门限均值
     # TODO: 自动化
     file = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
     # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
@@ -31,6 +31,9 @@ if __name__ == '__main__':
     start_freq = frame[1][0][4]/1000
     stop_freq = frame[1][0][5]/1000
     step = frame[1][0][7]
+    # 通过起始结束频率查询监测业务编号
+    bid_tmp = get_businessid(start_freq, stop_freq)
+    businessid = bid_tmp[0][0] if bid_tmp is list else bid_tmp
 
     for frame in freq_avg(file, 10):
         frame_count += 1
@@ -70,7 +73,6 @@ if __name__ == '__main__':
         else:
             amp_struct_info = amp_info(fp_data_total, auto_total)
             print('总扫描帧数量 {0}'.format(frame_count))
-            print(time_str)
 
             fp_data_total = []
             auto_total = []
@@ -82,11 +84,12 @@ if __name__ == '__main__':
                 scan_count = 0
                 for j in amp_struct.amp_dict.values():
                     scan_count += j
+
                 with open('amp_info.min', 'a') as f:
-                    f.write('{0}|{1}|{2}|{3}|{4}|{5}|{6}'.format(
-                        mfid, time_str.split('.')[0], 4, amp_struct.sig_index,
-                        amp_struct.amp_dict, amp_struct.occupancy, scan_count)
-                            )
+                    f.write('{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}'.format(
+                        businessid, mfid, time_str.split('.')[0], 4, amp_struct.sig_index, start_freq, stop_freq, step,
+                        amp_struct.amp_dict, amp_struct.occupancy, scan_count, amp_struct.threshold_avg
+                    ))
                     f.write('\n')
 
     print('任务总耗时 {0}'.format(time.time() - task_start_time))
