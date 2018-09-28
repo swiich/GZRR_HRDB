@@ -1,7 +1,7 @@
 from ctypes import *
 
-so_auto = CDLL('./result_table_scripts/c_lib/libAutoThreshold.so')
-so_sigdetect = CDLL('./result_table_scripts/c_lib/libSignalDetect.so')
+so_auto = CDLL('./tools/c_lib/libAutoThreshold.so')
+so_sigdetect = CDLL('./tools/c_lib/libSignalDetect.so')
 
 
 class CInvoker:

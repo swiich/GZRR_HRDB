@@ -12,7 +12,7 @@ def socket_recv():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('172.39.8.60', 10001))
+        s.bind(('172.18.140.8', 10001))
         s.listen(10)
 
         print('waiting connection...')
@@ -33,9 +33,9 @@ def deal_data(conn, addr):
     print('accept new connection from {0}'.format(addr))
 
     try:
-        buf = conn.recv(28)
+        buf = conn.recv(24)
         if buf:
-            el, = struct.unpack('b', buf[27:28])
+            el, = struct.unpack('b', buf[23:24])
             buf = conn.recv(el)
             dataguid, = struct.unpack('%ss' % el, buf)
             # print(dataguid)

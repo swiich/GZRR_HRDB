@@ -4,19 +4,17 @@ from tools.c_lib.c_invoker import CInvoker
 from tools.signal_handler import *
 import time
 import numpy as np
+from tools.file_info import file_index, des_save
+from tools.MyThread import MyThread
 
 
-if __name__ == '__main__':
-    # TODO: 将固定文件改为监控文件变动, 自动化
-    # TODO: 描述文件内容，insert into table
-    # TODO: 解析天线因子存入表
-    file = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
-    # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
-    if not os.path.exists(file):
-        file = download_file('/data/fscan/%s' % file, file)
+def file_resolve(file):
+    """
 
-    task_start_time = time.time()
+    生成信号分选结构及频谱数据按分钟中间值写入文件
 
+    """
+    print('file resolving...')
     frame_count = 0
     fp_data_total = []
     auto_total = []
@@ -62,11 +60,10 @@ if __name__ == '__main__':
 
                 sigDetectResult = np.array([cf, cfi, cfa, snr, sb])
                 # 将信号写入文件
-                # signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
+                signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
 
             else:
                 print(sig_count)
-            print(time_str)
 
         else:
             amp_struct_info = amp_info(fp_data_total, auto_total)
@@ -89,5 +86,36 @@ if __name__ == '__main__':
                         amp_struct.amp_dict, amp_struct.occupancy, scan_count, amp_struct.threshold_avg
                     ))
                     f.write('\n')
+    print('file resolved...')
 
-    print('任务总耗时 {0}'.format(time.time() - task_start_time))
+
+if __name__ == '__main__':
+    # TODO: 将固定文件改为监控文件变动, 自动化
+    # TODO: 移动车经纬度文件
+    starttime = time.time()
+    file_data = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.FSCAN'
+    file_des = '52010001119001-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180801152800.0115.des'
+    # file = '11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
+    if not os.path.exists(file_data):
+        file_data = download_file('/data/fscan&spectrum/%s' % file_data, file_data)
+        print(file_data)
+
+    t1 = MyThread(func=file_resolve, args=(file_data,))
+    t2 = MyThread(file_index, (file_data, file_des, 'file_index'))
+    t3 = MyThread(file_index, (file_data, file_des, 'task_info'))
+    t4 = MyThread(file_index, (file_data, file_des, 'device_info'))
+    t5 = MyThread(des_save, (file_des,))
+
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t5.start()
+
+    res = [t1, t2, t3, t4, t5]
+    for t in res:
+        t.join()
+        print(t.get_result())
+
+    stoptime = time.time()
+    print(stoptime-starttime)

@@ -23,7 +23,6 @@ class Read:
             ts.append(np.frombuffer(file.read(2), np.uint16)[0])    # 年 月 日 时 分 秒 毫秒
             pl = np.frombuffer(file.read(4), np.uint32)[0]
             el = np.frombuffer(file.read(1), np.uint8)[0]            # 扩展帧长度
-
             ts_str = "{0}-{1}-{2} {3}:{4}:{5}.{6}".format(*ts)
 
             if el:
@@ -76,7 +75,7 @@ class Read:
         while payload_len:
             dt = np.frombuffer(file.read(1), np.uint8)[0]
             dl = np.frombuffer(file.read(4), np.uint32)[0]
-
+            print(dt, dl)
             freq_sec_num = np.frombuffer(file.read(1), np.uint8)[0]
             channels_total = np.frombuffer(file.read(4), np.uint32)[0]
             start_freq = np.frombuffer(file.read(8), np.float64)[0]

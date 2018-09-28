@@ -9,16 +9,22 @@ def download_file(hdfs_location, local):
     """
     :param hdfs_location: hdfs路径+文件名
     :param local: 本地路径+文件名
-    :return:
     """
-    client = hdfs.Client('http://172.39.8.62:50070', root='/', timeout=10)
+    client = hdfs.Client('http://172.39.8.61:50070', root='/', timeout=10)
     file_local = '{0}'.format(local)
     try:
         with client.read(hdfs_location) as r:
             with open(file_local, 'wb') as f:
                 f.write(r.read())
 
-    except (hdfs.util.HdfsError, IOError) as msg:
+    except hdfs.util.HdfsError as msg:
+        client = hdfs.Client('http://172.39.8.62:50070', root='/', timeout=10)
+        file_local = '{0}'.format(local)
+        with client.read(hdfs_location) as r:
+            with open(file_local, 'wb') as f:
+                f.write(r.read())
+
+    except IOError as msg:
         print(msg)
         file_local = None
 

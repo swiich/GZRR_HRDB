@@ -2,7 +2,7 @@ import numpy as np
 from tools.analyse_stream import Read
 import csv
 import uuid
-from socket_d.hive import hive_connector as hc
+import hive_connector as hc
 
 
 class AmpStruct:
@@ -122,7 +122,7 @@ def freq_avg(file, avg_count):
 def get_businessid(start_freq, stop_freq):
     """
 
-    通过起始结束频率查询表获取监测业务编号
+    通过起始结束频率查询表获取监测业务编号 单位 Mhz
 
     """
     cursor = hc.get_hive_cursor('172.18.140.8', 'rmdsd')
