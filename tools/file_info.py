@@ -3,7 +3,7 @@ import os
 import numpy as np
 import xml.etree.cElementTree as Et
 from time import strftime, strptime
-import hive_connector as hc
+# import hive_connector as hc
 from tools.signal_handler import get_businessid
 # import sys
 # sys.path.append(r'自己包的路径')
@@ -11,7 +11,8 @@ from tools.signal_handler import get_businessid
 
 class MBasicDataTable(Read):
     def __init__(self, file_name):
-        self.file_name = file_name
+        super(MBasicDataTable, self).__init__(file_name, '')
+        # self.file_name = file_name
 
     def header_payload(self):
         file = open(self.file_name, 'rb')

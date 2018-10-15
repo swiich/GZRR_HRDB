@@ -2,7 +2,7 @@ import numpy as np
 from tools.analyse_stream import Read
 import csv
 import uuid
-import hive_connector as hc
+# import hive_connector as hc
 
 
 class AmpStruct:

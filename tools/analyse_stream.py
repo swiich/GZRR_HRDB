@@ -16,26 +16,20 @@ class Read:
             if not leader:                # 判断是否读取到文件末
                 break
             ver = np.frombuffer(file.read(2), np.uint8)[0]
-            stc = np.frombuffer(file.read(4), np.uint32)[0]
-            ts = [np.frombuffer(file.read(2), np.uint16)[0]]
-            for i in np.frombuffer(file.read(5), np.uint8):
+            stc, = struct.unpack('I', file.read(4))
+            ts = [struct.unpack('H', file.read(2))[0]]
+            for i in struct.unpack('5B', file.read(5)):
                 ts.append(i)
-            ts.append(np.frombuffer(file.read(2), np.uint16)[0])    # 年 月 日 时 分 秒 毫秒
-            pl = np.frombuffer(file.read(4), np.uint32)[0]
-            el = np.frombuffer(file.read(1), np.uint8)[0]            # 扩展帧长度
+            ts.append(struct.unpack('H', file.read(2))[0])    # 年 月 日 时 分 秒 毫秒
+            pl, = struct.unpack('I', file.read(4))
+            el, = struct.unpack('B', file.read(1))            # 扩展帧长度
             ts_str = "{0}-{1}-{2} {3}:{4}:{5}.{6}".format(*ts)
-
             if el:
                 file.read(el)                        # 扩展帧头ExHeader
 
-            if self.file_type == 'spm':
-                payload = self.spm(file, pl)
-            elif self.file_type == 'fsc':
-                payload = self.fsc(file, pl)
-            elif self.file_type == 'gps':
-                payload = self.position(file, pl)
-            elif self.file_type == 'antenna':
-                payload = self.antenna(file, pl)
+            func_map = {'spm': self.spm, 'fsc': self.fsc, 'gps': self.position, 'antenna': self.antenna}
+            # 传参顺序 file, pl
+            payload = func_map[self.file_type](file, pl)
 
             head = (leader, ver, stc, ts_str, pl, el)
             yield head, payload
@@ -43,8 +37,10 @@ class Read:
         file.close()
 
     @staticmethod
-    def spm(file, payload_len):
+    def spm(*args):
         """频谱数据"""
+        file = args[0]
+        payload_len = args[1]
         payload = []
         while payload_len:
 
@@ -69,13 +65,15 @@ class Read:
         return payload
 
     @staticmethod
-    def fsc(file, payload_len):
+    def fsc(*args):
         """频段扫描数据"""
+        file = args[0]
+        payload_len = args[1]
         payload = []
         while payload_len:
             dt = np.frombuffer(file.read(1), np.uint8)[0]
             dl = np.frombuffer(file.read(4), np.uint32)[0]
-            print(dt, dl)
+
             freq_sec_num = np.frombuffer(file.read(1), np.uint8)[0]
             channels_total = np.frombuffer(file.read(4), np.uint32)[0]
             start_freq = np.frombuffer(file.read(8), np.float64)[0]
@@ -95,8 +93,10 @@ class Read:
         return payload
 
     @staticmethod
-    def position(file, payload_len):
+    def position(*args):
         """ gps数据 """
+        file = args[0]
+        payload_len = args[1]
         payload = []
         while payload_len:
             dt, = struct.unpack('b', file.read(1))
@@ -116,8 +116,10 @@ class Read:
         return payload
 
     @staticmethod
-    def antenna(file, payload_len):
+    def antenna(*args):
         """ 天线因子 """
+        file = args[0]
+        payload_len = args[1]
         payload = []
         while payload_len:
             dt, = struct.unpack('b', file.read(1))
