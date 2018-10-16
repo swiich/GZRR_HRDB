@@ -3,7 +3,7 @@ import os
 import numpy as np
 import xml.etree.cElementTree as Et
 from time import strftime, strptime
-# import hive_connector as hc
+import hive_connector as hc
 from tools.signal_handler import get_businessid
 # import sys
 # sys.path.append(r'自己包的路径')
@@ -132,7 +132,8 @@ def xml_parser(xml_file, return_type):
     bid_tmp = get_businessid(start_freq/1000000, stop_freq/1000000)
     businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
 
-    paramxml_str = Et.tostring(paramxml, 'utf-8').decode().replace('\n', '')
+    paramxml_str = Et.tostring(paramxml, 'utf-8').decode().\
+        replace('\n', '').replace('\t', '').replace('<paramxml>', '').replace(' ', '').replace('</paramxml>', '')
 
     if return_type == 'file_index':
         result = (dataguid, taskid, equid, t_start_time, t_stop_time, businessid)
@@ -158,5 +159,6 @@ def des_save(xml_file):
         sql = "insert into table des_file values ('{0}','{1}')".format(os.path.basename(xml_file), res)
         hc.execute_sql_insert(cursor, sql)
         return True
-    except:
+    except Exception as e:
+        print("error at des_save  ", e)
         return False
