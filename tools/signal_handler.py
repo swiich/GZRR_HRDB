@@ -5,6 +5,7 @@ import uuid
 import hive_connector as hc
 import time
 from tools.c_lib.c_invoker import CInvoker
+import os
 
 
 class AmpStruct:
@@ -100,9 +101,9 @@ def freq_avg(file, avg_count):
 
     np_data_total = []
     counter = avg_count
-    for frame in Read(file, 'fsc').header_payload():
+    for frame in Read(file).header_payload():
 
-        fp_data = np.array(list(map(lambda x: float(x) / 10, frame[1][0][-1])))
+        fp_data = np.array(list(map(lambda x: float(x) / 10, frame[1][-1])))
         np_data_total.append(fp_data)
 
         counter -= 1
@@ -117,7 +118,7 @@ def freq_avg(file, avg_count):
             counter = avg_count
             np_data_total = []
 
-            frame[1][0][9] = fp_data[0]
+            frame[1][-1] = fp_data[0]
             yield frame
 
 
@@ -157,11 +158,11 @@ def file_resolve(file):
     time_tmp = time.localtime(time.mktime(time.strptime(next(freq_avg(file, 10))[0][3], '%Y-%m-%d %H:%M:%S.%f')))
     time_tmp = time_tmp.tm_min
 
-    mfid = file.split('-')[0]
+    mfid = os.path.basename(file).split('-')[0]
     frame = next(freq_avg(file, 10))
-    start_freq = frame[1][0][4]/1000
-    stop_freq = frame[1][0][5]/1000
-    step = frame[1][0][7]
+    start_freq = frame[1][4]/1000
+    stop_freq = frame[1][5]/1000
+    step = frame[1][7]
     # 通过起始结束频率查询监测业务编号
     bid_tmp = get_businessid(start_freq, stop_freq)
     businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
@@ -175,11 +176,11 @@ def file_resolve(file):
 
         if time_struct.tm_min == time_tmp:
 
-            fp_data = frame[1][0][-1]
+            fp_data = frame[1][-1]
 
-            start_freq = frame[1][0][4]/1000
-            stop_freq = frame[1][0][5]/1000
-            step = frame[1][0][7]/1000
+            start_freq = frame[1][4]/1000
+            stop_freq = frame[1][5]/1000
+            step = frame[1][7]/1000
 
             so = CInvoker(fp_data, start_freq, stop_freq, step)
             # 信号分选
@@ -196,6 +197,7 @@ def file_resolve(file):
                 sigDetectResult = np.array([cf, cfi, cfa, snr, sb])
                 # 将信号写入文件
                 signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
+                print(sig_count)
 
             else:
                 print(sig_count)

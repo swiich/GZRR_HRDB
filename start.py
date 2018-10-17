@@ -4,7 +4,6 @@ from tools.MyThread import MyThread
 
 
 if __name__ == '__main__':
-    # TODO: 将固定文件改为监控文件变动, 自动化
     # TODO: 移动车经纬度文件
     file_data = '7adb8062-4ace-4269-ab11-6f019a9fe0db_20180928153703.bin'
     # file_des = '7adb8062-4ace-4269-ab11-6f019a9fe0db_20180928153703.xml'

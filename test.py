@@ -1,10 +1,4 @@
-# from tools.analyse_stream import Read
-#
-# # file = './data/test.position'
-# file = './data/test.Antennafactor'
-#
-# for i in Read(file, 'antenna').header_payload():
-#     print(i)
+
 
 # import struct
 # import time
@@ -18,45 +12,17 @@
 # print(end-start)
 # print(res)
 
-# import asyncio
-# import time
-#
-#
-# now = lambda :time.time()
-#
-#
-# async def do_some_work(x):
-#     print("Waiting:",x)
-#     # await asyncio.sleep(x)
-#     await time.sleep(x)
-#     return "Done after {}s".format(x)
-#
-# start = now()
-#
-# coroutine1 = do_some_work(1)
-# coroutine2 = do_some_work(2)
-# coroutine3 = do_some_work(4)
-#
-# tasks = [
-#     asyncio.ensure_future(coroutine1),
-#     asyncio.ensure_future(coroutine2),
-#     asyncio.ensure_future(coroutine3)
-# ]
-#
-# loop = asyncio.get_event_loop()
-# loop.run_until_complete(asyncio.wait(tasks))
-#
-# for task in tasks:
-#     print("Task ret:",task.result())
-#
-# print("Time:",now()-start)
-
 from tools.analyse_stream import Read
-from tools.file_info import MBasicDataTable
 
 # file = './data/7adb8062-4ace-4269-ab11-6f019a9fe0db_20180928193211.bin'
-file = './data/7ce82f8d-4dfb-4d74-a035-1fe2014bdc76_20180927170205.bin'
-# file = './data/11000001111111-B_PScan(VHF)-838a7074-ff73-49c3-a65d-86dd0ec967dd-20180808090648.0809.FSCAN'
-# file = './data/test.spectrum'
-for i in MBasicDataTable(file).header_payload():
+# file = './data/7ce82f8d-4dfb-4d74-a035-1fe2014bdc76_20180927170205.bin'
+file = './data/hr/11000001111111-838a7074-ff73-49c3-a65d-86dd0ec967dd.bin'
+
+for i in Read(file).header_payload():
     print(i)
+    # break
+
+# from tools.file_info import MBasicDataTable
+# for i in MBasicDataTable(file).header_payload():
+#     print(i)
+#     break

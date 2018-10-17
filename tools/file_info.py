@@ -10,8 +10,8 @@ from tools.signal_handler import get_businessid
 
 
 class MBasicDataTable(Read):
-    def __init__(self, file_name):
-        super(MBasicDataTable, self).__init__(file_name, '')
+    # def __init__(self, file_name):
+    #     super(MBasicDataTable, self).__init__(file_name)
         # self.file_name = file_name
 
     def header_payload(self):
@@ -108,7 +108,7 @@ def file_index(file, file_des, return_type):
 def xml_parser(xml_file, return_type):
     """
 
-    解析描述文件
+    解析描述文件    dataguid
 
     """
     xml_root = Et.parse(xml_file)
