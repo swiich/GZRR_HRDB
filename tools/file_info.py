@@ -2,11 +2,12 @@ from tools.analyse_stream import Read
 import os
 import numpy as np
 import xml.etree.cElementTree as Et
-from time import strftime, strptime
 import hive_connector as hc
 from tools.signal_handler import get_businessid
-# import sys
-# sys.path.append(r'自己包的路径')
+from tools import webservice as ws
+
+import sys
+sys.path.append('/root/home/gzrr/project')
 
 
 class MBasicDataTable(Read):
@@ -59,7 +60,7 @@ class MBasicDataTable(Read):
 def get_file_info(file):
     """
 
-    获取文件监测开始时间，结束时间，监测数据类型，文件大小，mfid
+    获取文件监测开始时间，结束时间，监测数据类型，文件大小
 
     """
     inf = next(MBasicDataTable(file).header_payload())
@@ -67,11 +68,10 @@ def get_file_info(file):
     m_stop_time = ''
     m_data_type = inf[1]
     file_size = round(os.path.getsize(file)/1024**2, 2)
-    mfid = os.path.basename(file).split('-')[0]
     for f in MBasicDataTable(file).header_payload():
         m_stop_time = f[0]
 
-    result = (m_start_time, m_stop_time, m_data_type, file_size, mfid)
+    result = (m_start_time, m_stop_time, m_data_type, file_size)
     return result
 
 
@@ -85,16 +85,16 @@ def file_index(file, file_des, return_type):
     file_result = get_file_info(file)
 
     if return_type == 'file_index':
-        result = (des_result[0], des_result[1], file_result[4], des_result[2], des_result[5], file_result[0],
+        result = (des_result[0], des_result[1], des_result[6], des_result[2], des_result[5], file_result[0],
                   file_result[1], des_result[3], des_result[4], file_result[3],
                   '/data/fscan&spectrum/'+os.path.basename(file), file_result[2])
         sql = "insert into table file_index values ('{0}','{1}','{2}','{3}','{4}'," \
               "'{5}','{6}','{7}','{8}','{9}','{10}','{11}')".format(*result)
     elif return_type == 'device_info':
-        result = (des_result[0], file_result[4], des_result[1], des_result[2], des_result[3], des_result[4])
+        result = (des_result[0], des_result[5], des_result[1], des_result[2], des_result[3], des_result[4])
         sql = "insert into table deviceinfo values ('{0}','{1}','{2}','{3}','{4}','{5}')".format(*result)
     elif return_type == 'task_info':
-        result = (des_result[0], des_result[1], file_result[4], des_result[2], des_result[3],
+        result = (des_result[0], des_result[1], des_result[9], des_result[2], des_result[3],
                   des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8])
         sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
               "'{5}','{6}','{7}','{8}','{9}')".format(*result)
@@ -108,41 +108,35 @@ def file_index(file, file_des, return_type):
 def xml_parser(xml_file, return_type):
     """
 
-    解析描述文件    dataguid
+    解析描述文件
 
     """
-    xml_root = Et.parse(xml_file)
+    xml_root = Et.parse(xml_file).find('result')
 
-    areacode = xml_root.find('areacode').text
-    mfname = xml_root.find('mfname').text
-    equipment = xml_root.find('equipment')
-    equid = equipment.find('equid').text
-    equname = equipment.find('equname').text
-    task = equipment.find('task')
-    dataguid = task.find('dataguid').text
-    taskid = task.find('taskid').text
-    t_start_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('starttime').text, "%Y/%m/%d %H:%M:%S")))
-    t_stop_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('stoptime').text, "%Y/%m/%d %H:%M:%S")))
-    feature = task.find('feature').text
-    userid = task.find('userid').text
-    appid = task.find('appid').text
-    paramxml = task.find('paramxml')
-    start_freq = float(paramxml.find('startfreq').text)
-    stop_freq = float(paramxml.find('stopfreq').text)
+    equid = xml_root.find('equid').text
+    mfid = xml_root.find('mfid').text
+    areacode = mfid[0:6]
+    mfname, equname, tmp, tmp = ws.query_device(mfid, equid)
+    dataguid = os.path.basename(xml_file).split('.')[0]
+    taskid = xml_root.find('taskid').text
+    feature = xml_root.find('feature').text
+    userid = xml_root.find('userid').text
+    appid = xml_root.find('appid').text
+    res_list = xml_root.find('list').find('segment')
+    start_freq = float(res_list.find('startfreq').text)
+    stop_freq = float(res_list.find('stopfreq').text)
     bid_tmp = get_businessid(start_freq/1000000, stop_freq/1000000)
     businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
-
-    paramxml_str = Et.tostring(paramxml, 'utf-8').decode().\
-        replace('\n', '').replace('\t', '').replace('<paramxml>', '').replace(' ', '').replace('</paramxml>', '')
+    paramxml_str, t_start_time, t_stop_time = ws.query_tasks(taskid)
 
     if return_type == 'file_index':
-        result = (dataguid, taskid, equid, t_start_time, t_stop_time, businessid)
+        result = (dataguid, taskid, equid, t_start_time, t_stop_time, businessid, mfid)
     elif return_type == 'task_info':
-        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid)
+        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid, mfid)
     elif return_type == 'device_info':
-        result = (areacode, mfname, equid, equname, feature)
-    else:
-        raise ValueError
+        result = (areacode, mfname, equid, equname, feature, mfid)
+    elif return_type == 'b_info':
+        result = (mfid, start_freq, stop_freq)
 
     return result
 
@@ -154,7 +148,20 @@ def des_save(xml_file):
 
     """
     try:
-        res = open(xml_file, encoding='utf-8').read().replace('\n', '')
+
+        xml_root = Et.parse(xml_file).find('result')
+        taskid = xml_root.find('taskid').text
+        mfid = xml_root.find('mfid').text
+        areacode = mfid[0:6]
+        equid = xml_root.find('equid').text
+        mfname, equname, equmodel, feature_list = ws.query_device(mfid, equid)
+        feature = xml_root.find('feature').text
+        paramxml_str, t_start_time, t_stop_time = ws.query_tasks(taskid)
+        appid = xml_root.find('appid').text
+        userid = xml_root.find('userid').text
+        dataguid = os.path.basename(xml_file).split('.')[0]
+
+
         cursor = hc.get_hive_cursor('172.39.8.60', 'db_data_store')
         sql = "insert into table des_file values ('{0}','{1}')".format(os.path.basename(xml_file), res)
         hc.execute_sql_insert(cursor, sql)

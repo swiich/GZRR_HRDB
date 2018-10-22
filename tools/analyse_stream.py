@@ -2,7 +2,6 @@
 
 import numpy as np
 import struct
-import sys
 
 
 class Read:
@@ -34,13 +33,35 @@ class Read:
 
         file.close()
 
+    def pld(self, *args):
+        """ 读取payload """
+        file = args[0]
+        payload_len = args[1]
+        payload = []
+        while payload_len:
+            dt = np.frombuffer(file.read(1), np.uint8)[0]
+            dl = np.frombuffer(file.read(4), np.uint32)[0]
+
+            if dt == 12:
+                payload = self.fsc(file, dl, dt)
+            # elif dt == 18:
+            #     payload = self.antenna(file, dl, dt)
+            else:
+                file.read(dl)
+
+            # func_map = {7: self.spm, 12: self.fsc, 1: self.position, 18: self.antenna}
+            # payload.append(func_map[dt](file, dl, dt))
+            payload_len -= dl + 5
+
+        return payload
+
     @staticmethod
     def spm(*args):
         """频谱数据"""
         file = args[0]
         payload_len = args[1]
         dt = args[2]
-        payload = []
+        # payload = []
 
         number = np.frombuffer(file.read(1), np.uint8)[0]
         freq_total = np.frombuffer(file.read(4), np.uint32)[0]
@@ -54,9 +75,9 @@ class Read:
 
         tmp = [dt, payload_len, number, freq_total, start_freq, step, freq_number,
                freq_frame_amount, spectrum]
-        payload.append(tmp)
+        # payload.append(tmp)
 
-        return payload
+        return tmp
 
     @staticmethod
     def fsc(*args):
@@ -80,7 +101,7 @@ class Read:
         tmp = [dt, payload_len, freq_sec_num, channels_total, start_freq, end_freq,
                start_freq_num, step, frame_channel_total, spectrum]
 
-        file.read(4)
+        # file.read(4)
         # payload.append(tmp)
 
         return tmp
@@ -111,7 +132,7 @@ class Read:
         file = args[0]
         payload_len = args[1]
         dt = args[2]
-        payload = []
+        # payload = []
 
         freq_band_index, = struct.unpack('B', file.read(1))
         freq_total, = struct.unpack('I', file.read(4))
@@ -125,34 +146,6 @@ class Read:
             spectrum.append(struct.unpack('h', file.read(2))[0])
 
         tmp = [dt, payload_len, freq_band_index, freq_total, start_freq, stop_freq, step, freq_index, freq_count, spectrum]
-        payload.append(tmp)
+        # payload.append(tmp)
 
-        return payload
-
-    def pld(self, *args):
-        """频段扫描数据"""
-        file = args[0]
-        payload_len = args[1]
-        payload = []
-        while payload_len:
-            dt = np.frombuffer(file.read(1), np.uint8)[0]
-            dl = np.frombuffer(file.read(4), np.uint32)[0]
-
-            # if dt == 102 or dt == 18:
-            #     file.read(dl)
-            #     sys.exit()
-            #     break
-
-            if dt == 12:
-                payload = self.fsc(file, dl, dt)
-            else:
-                file.read(dl)
-
-            # func_map = {7: self.spm, 12: self.fsc, 1: self.position, 18: self.antenna}
-            # payload.append(func_map[dt](file, dl, dt))
-            payload_len -= dl + 5
-
-        return payload
-
-
-
+        return tmp

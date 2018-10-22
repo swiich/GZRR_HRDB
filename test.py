@@ -12,17 +12,36 @@
 # print(end-start)
 # print(res)
 
-from tools.analyse_stream import Read
+# from tools.analyse_stream import Read
+# from tools.signal_handler import freq_avg
 
 # file = './data/7adb8062-4ace-4269-ab11-6f019a9fe0db_20180928193211.bin'
-# file = './data/7ce82f8d-4dfb-4d74-a035-1fe2014bdc76_20180927170205.bin'
-file = './data/hr/11000001111111-838a7074-ff73-49c3-a65d-86dd0ec967dd.bin'
+# file = './data/0000434B-52B5-4805-43A2-1DF913B72394_20181019152125.bin'
+# file = './data/000045CF-1449-55BD-05E4-31296C4E5C37_20181018160227.bin'
+# file = './data/7adb8062-4ace-4269-ab11-6f019a9fe0db_20180928153703.bin'
 
-for i in Read(file).header_payload():
-    print(i)
-    # break
+# framelist = []
+# for i in Read(file).header_payload():
+    # framelist.append(i)
+    # print(i)
+# print(framelist)
+
+# for i in freq_avg(framelist, 10):
+#     print(i)
+#     break
 
 # from tools.file_info import MBasicDataTable
 # for i in MBasicDataTable(file).header_payload():
 #     print(i)
 #     break
+
+import hive_connector as hc
+import struct
+
+cursor = hc.get_hive_cursor('172.18.140.8', 'analysesystem')
+sql = 'select datacontent from stats_specturm_area where freqregionocy=51.01 and startfreq=80000'
+res, = hc.execute_sql(cursor, sql)[0]
+for i in range(0,len(res),12):
+    a = struct.unpack('i4h', res[i:i+12])
+    print(a)
+

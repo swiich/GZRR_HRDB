@@ -54,4 +54,4 @@ class CInvoker:
             return sig_count, center_freq, center_freq_index, center_freq_amp, snr, signal_band
 
         else:
-            return
+            print('sigcount < 0')
