@@ -2,12 +2,10 @@ from tools.analyse_stream import Read
 import os
 import numpy as np
 import xml.etree.cElementTree as Et
+import time
 import hive_connector as hc
 from tools.signal_handler import get_businessid
 from tools import webservice as ws
-
-import sys
-sys.path.append('/root/home/gzrr/project')
 
 
 class MBasicDataTable(Read):
@@ -60,7 +58,7 @@ class MBasicDataTable(Read):
 def get_file_info(file):
     """
 
-    获取文件监测开始时间，结束时间，监测数据类型，文件大小
+    获取文件监测开始时间，结束时间，监测数据类型，文件大小，文件每分钟数据大小
 
     """
     inf = next(MBasicDataTable(file).header_payload())
@@ -71,7 +69,11 @@ def get_file_info(file):
     for f in MBasicDataTable(file).header_payload():
         m_stop_time = f[0]
 
-    result = (m_start_time, m_stop_time, m_data_type, file_size)
+    m_start = time.mktime(time.strptime(m_start_time, '%Y-%m-%d %H:%M:%S.%f'))
+    m_stop = time.mktime(time.strptime(m_stop_time, '%Y-%m-%d %H:%M:%S.%f'))
+    file_size_min = round(file_size/(m_stop-m_start)*60, 2)
+
+    result = (m_start_time, m_stop_time, m_data_type, file_size, file_size_min)
     return result
 
 
@@ -93,16 +95,26 @@ def file_index(file, file_des, return_type):
     elif return_type == 'device_info':
         result = (des_result[0], des_result[5], des_result[1], des_result[2], des_result[3], des_result[4])
         sql = "insert into table deviceinfo values ('{0}','{1}','{2}','{3}','{4}','{5}')".format(*result)
+        sql_filter = 'select * from deviceinfo where mfid="{0}" and equid="{1}"'.format(des_result[5], des_result[2])
     elif return_type == 'task_info':
         result = (des_result[0], des_result[1], des_result[9], des_result[2], des_result[3],
                   des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8])
         sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
               "'{5}','{6}','{7}','{8}','{9}')".format(*result)
+        sql_filter = 'select * from taskinfo where taskid="{0}" and equid="{1}"'.format(des_result[0], des_result[2])
 
     cursor = hc.get_hive_cursor('172.39.8.60', 'db_data_store')
-    hc.execute_sql_insert(cursor, sql)
+    # 去重
+    if return_type == 'device_info' or return_type == 'task_info':
+        res = hc.execute_sql(cursor, sql_filter)
+        if not res:
+            hc.execute_sql_insert(cursor, sql)
+        else:
+            return 0
+    else:
+        hc.execute_sql_insert(cursor, sql)
 
-    return result
+    return 1
 
 
 def xml_parser(xml_file, return_type):
