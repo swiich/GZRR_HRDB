@@ -9,6 +9,9 @@ import time
 
 
 class SpectrumStatistics:
+    """
+    解析频谱评估数据文件
+    """
     def __init__(self, file):
         f_name = os.path.basename(file).split('_')
         self.file = open(file, 'rb')
@@ -67,7 +70,7 @@ class SpectrumStatistics:
         print(self.file.name)
 
 
-def freq_band_split(start_freq, stop_freq, step):
+def freq_band_index_split(start_freq, stop_freq, step):
     """
     通过开始频率和结束频率以及步进返回拆分后列表
     单位统一为   hz
@@ -77,6 +80,40 @@ def freq_band_split(start_freq, stop_freq, step):
         res.append(stop_freq)
     else:
         raise ValueError
+
+    return np.array(res)
+
+
+def freq_band_split(d, start_freq, stop_freq):
+    """
+    返回指定范围内的字典元素
+    """
+    res = {key: value for key, value in d.items() if start_freq <= key <= stop_freq}
+
+    return res
+
+
+def ocy(fp_data, start_freq, stop_freq, step):
+    """
+    计算每一帧频点是否超过门限，返回bool数组
+    单位  hz
+    """
+    so = CInvoker(fp_data, start_freq / 1000, stop_freq / 1000, step / 1000)
+    auto = so.auto_threshold()
+    np_fp_data = np.array(fp_data)
+    np_auto = np.array(auto)
+
+    return np_fp_data > np_auto
+
+
+def remove_null_from_dict(d):
+    """
+    去掉字典中超过门限次数为0的元素
+    """
+    res = d.copy()
+    for item in d.items():
+        if item[1] == 0:
+            res.pop(item[0])
 
     return res
 
@@ -105,17 +142,23 @@ if __name__ == '__main__':
     #     SpectrumStatistics(f).write_to_file('data/s5/res')
     #
     # print('耗时: ', time.time()-starttime)
+    start_time = time.time()
+    file = '/home/data/s1/52010000_0018_20180810_112227_780MHz_980MHz_12.5kHz_V_F.bin'
+    data_len = next(SpectrumStatistics(file).resolve())[0][-1]
+    tmp = np.zeros(data_len)
+    scan_count = 0
+    for i in SpectrumStatistics(file).resolve():
+        stop_freq = i[0][3]
+        start_freq = i[0][2]
+        step = i[0][4]
+        fp_data = i[1]
 
-    file = '/home/data/s1/52010000_0002_20180809_171213_780MHz_980MHz_12.5kHz_V_F.bin'
-    a = next(SpectrumStatistics(file).resolve())
-    stop_freq = a[0][3] / 1000
-    start_freq = a[0][2] / 1000
-    step = a[0][4] / 1000
-    fp_data = a[1]
-
-    so = CInvoker(fp_data, start_freq, stop_freq, step)
-    auto = so.auto_threshold()
-    np_fp_data = np.array(fp_data)
-    np_auto = np.array(auto)
-    print(np_fp_data > np_auto)
-
+        occupancy = ocy(fp_data, start_freq, stop_freq, step)
+        tmp += occupancy
+        scan_count += 1
+        print(scan_count)
+    print(tmp)
+    index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
+    t = dict(zip(index/1000000, tmp))
+    a = freq_band_split(t, 880, 890)
+    print(a)

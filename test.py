@@ -12,8 +12,8 @@
 # print(end-start)
 # print(res)
 
-from tools.c_lib.c_invoker import CInvoker
-import hive_connector as hc
+# from tools.c_lib.c_invoker import CInvoker
+# import hive_connector as hc
 # from tools.analyse_stream import Read
 # from tools.signal_handler import freq_avg
 
@@ -30,10 +30,10 @@ import hive_connector as hc
     # fp_data = i[1][-1]
     # break
 
-cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
-sql = "select * from spectrum_data limit 100"
-res = hc.execute_sql(cursor, sql)
-print(len(eval(res[0][-2])))
+# cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
+# sql = "select * from spectrum_data limit 100"
+# res = hc.execute_sql(cursor, sql)
+# print(len(eval(res[0][-2])))
 # so = CInvoker(fp_data, start_freq, stop_freq, step)
 # auto = so.auto_threshold()
 # print(fp_data)
@@ -63,3 +63,10 @@ print(len(eval(res[0][-2])))
 #     print(a)
 #     # break
 
+a = {5:1, 7: 2, 8:0}
+b = a.copy()
+print(a)
+for i in a.items():
+    if i[1] == 0:
+        b.pop(i[0])
+print(b)
