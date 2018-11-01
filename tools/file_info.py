@@ -173,7 +173,36 @@ def des_save(xml_file):
         userid = xml_root.find('userid').text
         dataguid = os.path.basename(xml_file).split('.')[0]
 
+        res = '<?xml version="1.0" encoding="utf-8"?>' \
+              '<datamapping>' \
+              '<mfid>{0}</mfid>' \
+              '<mfname>{1}</mfname>' \
+              '<areacode>{2}</areacode>' \
+              '<equipment>' \
+              '<equid>{3}</equid>' \
+              '<equname>{4}</equname>' \
+              '<equmodel>{5}</equmodel>' \
+              '{6}' \
+              '<task>' \
+              '<taskid>{7}</taskid>' \
+              '<taskname></taskname>' \
+              '<tasktype></tasktype>' \
+              '<starttime>{8}</starttime>' \
+              '<stoptime>{9}</stoptime>' \
+              '<appid>{10}</appid>' \
+              '<feature>{11}</feature>' \
+              '<userid>{12}</userid>' \
+              '<participateuser></participateuser>' \
+              '<taskarea>{13}</taskarea>' \
+              '<dataguid>{14}</dataguid>' \
+              '<paramxml>{15}</paramxml>' \
+              '</task>' \
+              '</equipment>' \
+              '</datamapping>'.format(mfid, mfname, areacode, equid, equname, equmodel, feature_list,
+                                      taskid, t_start_time, t_stop_time, appid, feature, userid, areacode,
+                                      dataguid, paramxml_str)
 
+        # print(res)
         cursor = hc.get_hive_cursor('172.39.8.60', 'db_data_store')
         sql = "insert into table des_file values ('{0}','{1}')".format(os.path.basename(xml_file), res)
         hc.execute_sql_insert(cursor, sql)

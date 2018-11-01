@@ -62,11 +62,7 @@
 #     a = struct.unpack('i4h', res[i:i+12])
 #     print(a)
 #     # break
+from tools import file_info as fi
 
-a = {5:1, 7: 2, 8:0}
-b = a.copy()
-print(a)
-for i in a.items():
-    if i[1] == 0:
-        b.pop(i[0])
-print(b)
+fi.des_save('./data/02de5f72-9266-46b8-ac16-30b919c890f9_20181019103643.xml')
+
