@@ -62,7 +62,7 @@
 #     a = struct.unpack('i4h', res[i:i+12])
 #     print(a)
 #     # break
-from tools import file_info as fi
-
-fi.des_save('./data/02de5f72-9266-46b8-ac16-30b919c890f9_20181019103643.xml')
+import time
+date = time.strptime('2018-09-11 12:16:39.108', '%Y-%m-%d %H:%M:%S.%f')
+print(str(date.tm_year)+str(date.tm_mon)+str(date.tm_mday))
 

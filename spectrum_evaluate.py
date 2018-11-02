@@ -8,6 +8,7 @@ from math import radians, cos, sin, asin, sqrt
 from tools import traverse_file
 import time
 import hive_connector as hc
+import uuid
 
 
 class SpectrumStatistics:
@@ -75,7 +76,17 @@ class SpectrumStatistics:
         """
         将固定站数据每个文件合并为一帧
         """
-        data_len = next(self.resolve())[0][-1]
+        # 将台站库存入内存，避免多次查询数据库
+        cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
+        sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
+        station = hc.execute_sql(cursor, sql)
+
+        first_frame = next(self.resolve())
+        time_str = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f')
+        date = str(time_str.tm_year)+str(time_str.tm_mon)+str(time_str.tm_mday)
+        longitude = first_frame[0][-4]
+        latitude = first_frame[0][-3]
+        data_len = first_frame[0][-1]
         tmp = np.zeros(data_len)
         scan_count = 0
         for i in self.resolve():
@@ -88,11 +99,23 @@ class SpectrumStatistics:
             tmp += occupancy
             scan_count += 1
             print(scan_count)
+
         index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
         t = dict(zip(index/1000000, tmp))
-        # TODO: 指定返回频段范围
-        a = freq_band_split(t, 880, 890)
-        print(a)
+        # 匹配台站
+        for j in station:
+            if haversine(longitude / 100000000, latitude / 100000000, j[0], j[1]) < j[2]:
+                guid = uuid.uuid1()
+                freqregion = j[3]
+                staid = j[4]
+                print(staid)
+                print(freqregion.split('-')[0], freqregion.split('-')[1])
+                activepoint = freq_band_split(t, int(freqregion.split('-')[0]), int(freqregion.split('-')[1]))
+                with open('facility', 'a') as f:
+                    f.write(str(guid)+'|'+freqregion+'|'+staid+'|'+date+'|'+str(scan_count)+'|'+str(activepoint))
+                    f.write('\n')
+
+        return 1
 
     def monitoring_car_data_min(self):
         """
@@ -106,29 +129,55 @@ class SpectrumStatistics:
         scan_count = 0
         first_frame = next(self.resolve())
         fp_data_total = np.zeros(first_frame[0][-1])
+        cvg_data = np.zeros(first_frame[0][-1])
         time_min = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f').tm_min
+
+        # res = []
         for i in self.resolve():
-            # 合并一分钟监测车数据为一帧
             time_current = time.strptime(i[0][10], '%Y-%m-%d %H:%M:%S.%f')
 
+            # 合并一分钟监测车数据为一帧
             if time_current.tm_min == time_min:
                 fp_data_total += i[1]
+                cvg_data += ocy(i[1], i[0][2], i[0][3], i[0][4])
                 scan_count += 1
             else:
                 print(time_min)
                 fp_data_min = (fp_data_total / scan_count).round()
-                time_str = i[0][10]
+                # time_str = i[0][10]
                 longitude = i[0][-4]
                 latitude = i[0][-3]
                 col, row = coordinate(longitude, latitude)
-                # print(longitude,latitude)
-                for i in station:
-                    if haversine(longitude, latitude, i[0], i[1]) < i[2]:
-                        print(ocy(fp_data_min, i[0][2], i[0][3]))
+                # 将每帧数据经纬度与台站数据库比对
+                for j in station:
+                    if haversine(longitude/100000000, latitude/100000000, j[0], j[1]) < j[2]:
+                        cvg = round(sum(cvg_data)/(scan_count*first_frame[0][-1])*100, 2)
+                        ocy_data = ocy(fp_data_min, i[0][2], i[0][3], i[0][4])
+                        ocy_res = round(sum(ocy_data)/ocy_data.size * 100, 2)
+                        with open('car', 'a') as f:
+                            f.write(str(col)+','+str(row)+','+j[3]+','+j[4]+','+str(ocy_res)+','+str(cvg))
+                            f.write('\n')
+                        # res.append([col, row, j[3], j[4], ocy_res, cvg])
 
                 fp_data_total = np.zeros(first_frame[0][-1])
+                cvg_data = np.zeros(first_frame[0][-1])
                 time_min = time_current.tm_min
                 scan_count = 0
+
+        return 1
+
+    def calc(self):
+        """
+        判断文件为监测车或固定站并调用对应方法
+        """
+        try:
+            if self.flag == 'F':
+                self.monitoring_facility_data_file()
+            else:
+                self.monitoring_car_data_min()
+
+        except Exception as e:
+            print(e)
 
 
 def freq_band_index_split(start_freq, stop_freq, step):
@@ -224,34 +273,15 @@ def haversine(lon1, lat1, lon2, lat2):
 
 
 if __name__ == '__main__':
-    pass
-    # starttime = time.time()
-    #
-    # file_ = traverse_file.get_all_file('data/s1')
-    # for f in file_:
-    #     SpectrumStatistics(f).write_to_file('data/s1/res')
-    #
-    # file_ = traverse_file.get_all_file('data/s2')
-    # for f in file_:
-    #     SpectrumStatistics(f).write_to_file('data/s2/res')
-    #
-    # file_ = traverse_file.get_all_file('data/s3')
-    # for f in file_:
-    #     SpectrumStatistics(f).write_to_file('data/s3/res')
-    #
-    # file_ = traverse_file.get_all_file('data/s4')
-    # for f in file_:
-    #     SpectrumStatistics(f).write_to_file('data/s4/res')
-    #
-    # file_ = traverse_file.get_all_file('data/s5')
-    # for f in file_:
-    #     SpectrumStatistics(f).write_to_file('data/s5/res')
-    #
-    # print('耗时: ', time.time()-starttime)
 
+    # file = '/home/data/2018_gz_spectrumEvaluate/波尔公司频率使用率评价/花溪/52010000_0018_20180810_112227_780MHz_980MHz_12.5kHz_V_F.bin'
+    file = '/home/data/2018_gz_spectrumEvaluate/贵阳/移动监测/频谱评估2018移动监测(黑奔)/监测数据/9.12/52010000_0002_20180912_095421_780MHz_980MHz_12.5kHz_V_M.bin'
+    SpectrumStatistics(file).calc()
 
-    # file = '/home/data/2018_gz_spectrumEvaluate/贵阳/固定监测/7月25日/52010000_0202_20180724_170338_780MHz_980MHz_12.5kHz_V_F.bin'
-    file = '/home/data/2018_gz_spectrumEvaluate/修文、贵阳东站移动监测数据/10月23日移动监测/52010000_0001_20181023_122631_780MHz_980MHz_12.5kHz_V_M.bin'
-    SpectrumStatistics(file).monitoring_car_data_min()
-    # for i in match_stationid(10672102666/1000, 2656997000/1000):
-    #     print(i)
+    # a = traverse_file.get_all_file('/home/data/2018_gz_spectrumEvaluate', 'bin')
+    # b = []
+    # for i in a:
+    #     name = os.path.basename(i)
+    #     if len(name.split('_')) == 9:
+    #         b.append(name)
+    # print(len(b))
