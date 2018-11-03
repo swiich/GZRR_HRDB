@@ -62,7 +62,15 @@
 #     a = struct.unpack('i4h', res[i:i+12])
 #     print(a)
 #     # break
-import time
-date = time.strptime('2018-09-11 12:16:39.108', '%Y-%m-%d %H:%M:%S.%f')
-print(str(date.tm_year)+str(date.tm_mon)+str(date.tm_mday))
 
+# import csv
+#
+# file = './data/station.csv'
+# station = []
+# with open(file,'r') as f:
+#     reader = csv.reader(f)
+#     for i in reader:
+#         row = (float(i[-4]),float(i[-3]),float(i[-1]),i[-7])
+#         station.append(row)
+# station = tuple(station)
+print(float(0))

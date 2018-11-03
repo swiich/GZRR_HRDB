@@ -76,7 +76,7 @@ class SpectrumStatistics:
         """
         将固定站数据每个文件合并为一帧
         """
-        # 将台站库存入内存，避免多次查询数据库
+        # 将台站库存入内存，避免多次查询
         cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
         sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
         station = hc.execute_sql(cursor, sql)
@@ -98,7 +98,6 @@ class SpectrumStatistics:
             occupancy = ocy(fp_data, start_freq, stop_freq, step)
             tmp += occupancy
             scan_count += 1
-            print(scan_count)
 
         index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
         t = dict(zip(index/1000000, tmp))
@@ -108,8 +107,6 @@ class SpectrumStatistics:
                 guid = uuid.uuid1()
                 freqregion = j[3]
                 staid = j[4]
-                print(staid)
-                print(freqregion.split('-')[0], freqregion.split('-')[1])
                 activepoint = freq_band_split(t, int(freqregion.split('-')[0]), int(freqregion.split('-')[1]))
                 with open('facility', 'a') as f:
                     f.write(str(guid)+'|'+freqregion+'|'+staid+'|'+date+'|'+str(scan_count)+'|'+str(activepoint))
@@ -121,7 +118,7 @@ class SpectrumStatistics:
         """
         将监测车数据每分钟合并为一帧
         """
-        # 将台站库存入内存，避免多次查询数据库
+        # 将台站库存入内存，避免多次查询
         cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
         sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
         station = hc.execute_sql(cursor, sql)
@@ -142,7 +139,6 @@ class SpectrumStatistics:
                 cvg_data += ocy(i[1], i[0][2], i[0][3], i[0][4])
                 scan_count += 1
             else:
-                print(time_min)
                 fp_data_min = (fp_data_total / scan_count).round()
                 # time_str = i[0][10]
                 longitude = i[0][-4]
@@ -175,6 +171,7 @@ class SpectrumStatistics:
                 self.monitoring_facility_data_file()
             else:
                 self.monitoring_car_data_min()
+            print(self.file.name)
 
         except Exception as e:
             print(e)
@@ -274,14 +271,11 @@ def haversine(lon1, lat1, lon2, lat2):
 
 if __name__ == '__main__':
 
-    # file = '/home/data/2018_gz_spectrumEvaluate/波尔公司频率使用率评价/花溪/52010000_0018_20180810_112227_780MHz_980MHz_12.5kHz_V_F.bin'
-    file = '/home/data/2018_gz_spectrumEvaluate/贵阳/移动监测/频谱评估2018移动监测(黑奔)/监测数据/9.12/52010000_0002_20180912_095421_780MHz_980MHz_12.5kHz_V_M.bin'
-    SpectrumStatistics(file).calc()
-
-    # a = traverse_file.get_all_file('/home/data/2018_gz_spectrumEvaluate', 'bin')
-    # b = []
-    # for i in a:
-    #     name = os.path.basename(i)
-    #     if len(name.split('_')) == 9:
-    #         b.append(name)
-    # print(len(b))
+    files = traverse_file.get_all_file('/home/data/2018_gz_spectrumEvaluate', 'bin')
+    count = 0
+    for i in files:
+        name = os.path.basename(i)
+        if len(name.split('_')) == 9:
+            SpectrumStatistics(i).calc()
+            count += 1
+            print(count)
