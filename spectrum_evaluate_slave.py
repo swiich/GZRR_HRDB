@@ -84,10 +84,13 @@ class SpectrumStatistics:
             reader = csv.reader(f)
             for i in reader:
                 try:
-                    row = (i[5], float(i[-3]), float(i[-4]), float(i[-1]), i[-7], float(i[-5]))
+                    # 通过监测文件区域码过滤台站
+                    if self.mscode[0:4] == i[8][0:4]:
+                        row = (i[5], float(i[-3]), float(i[-4]), float(i[-1]), i[-7], float(i[-5]))
+                        print(row)
+                        station.append(row)
                 except Exception as e:
                     pass
-                station.append(row)
         station = tuple(station)
 
         first_frame = next(self.resolve())
@@ -110,14 +113,13 @@ class SpectrumStatistics:
             occupancy = ocy(fp_data, start_freq, stop_freq, step)
             tmp_ocy += occupancy
             scan_count += 1
-            print(scan_count)
 
-        tmp_fpdata = tmp_fpdata/scan_count
+        # tmp_fpdata = tmp_fpdata/scan_count
         index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
-        point = dict(zip(index/1000000, tmp_fpdata))
+        # point = dict(zip(index/1000000, tmp_fpdata))
         t = dict(zip(index/1000000, tmp_ocy.astype(np.int32)))
         # 匹配台站
-        freqregion_total = []
+        # freqregion_total = []
         for j in station:
             freqregion_start = float(j[-2].split('-')[0])*1000000
             freqregion_stop = float(j[-2].split('-')[1])*1000000
@@ -125,38 +127,40 @@ class SpectrumStatistics:
             if haversine(longitude / 100000000, latitude / 100000000, j[1], j[2]) < j[3] and \
                     (self.start_freq < freqregion_start < self.stop_freq or
                      self.start_freq < freqregion_stop < self.stop_freq):
+
                 guid = uuid.uuid1()
                 freqregion = j[-2]
                 staid = j[0]
+                print(staid)
                 activepoint = freq_band_split(t, freqregion_start/1000000, freqregion_stop/1000000)
-                with open('facility', 'a') as f:
+                with open('/storage/sdb/data/facility', 'a') as f:
                     f.write(code+'|'+str(guid)+'|'+freqregion+'|'+staid+'|'+date+'|'+str(scan_count)+'|'+str(activepoint))
                     f.write('\n')
-                # 判断违规频点
-                station_power = float(j[-1])
-                for item in point.items():
-                    if item[1] > station_power:
-                        illegal_freq = item[0]
-                        illegal_type = '0'
-                        mfid = code
-                        with open('illegal_freq', 'a') as f:
-                            f.write(str(illegal_freq)+','+illegal_type+','+mfid+','+date+','+staid)
-                            f.write('\n')
-
-                freqregion_total.append(freqregion)
-
-        # 判断违规频率, 频点不在监测范围内，并且频点占用度超过3%
-        if freqregion_total:
-
-            section = section_cut(str(self.start_freq/1000000)+'-'+str(self.stop_freq/1000000), self.step, *freqregion_total)
-            for i in section:
-                if t[i]/scan_count > 0.03:
-                    illegal_freq = i
-                    illegal_type = '1'
-                    mfid = code
-                    with open('illegal_freq', 'a') as f:
-                        f.write(str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date + ',' + '')
-                        f.write('\n')
+        #         # 判断违规频点
+        #         station_power = float(j[-1])
+        #         for item in point.items():
+        #             if item[1]/10 > station_power:
+        #                 illegal_freq = item[0]
+        #                 illegal_type = '0'
+        #                 mfid = code
+        #                 with open('/storage/sdb/data/illegal_freq', 'a') as f:
+        #                     f.write(str(illegal_freq)+','+illegal_type+','+mfid+','+date+','+str(item[1]/10)+','+staid)
+        #                     f.write('\n')
+        #
+        #         freqregion_total.append(freqregion)
+        #
+        # # 判断违规频率, 频点不在监测范围内，并且频点占用度超过3%
+        # if freqregion_total:
+        #
+        #     section = section_cut(str(self.start_freq/1000000)+'-'+str(self.stop_freq/1000000), self.step, *freqregion_total)
+        #     for i in section:
+        #         if t[i]/scan_count > 0.03:
+        #             illegal_freq = i
+        #             illegal_type = '1'
+        #             mfid = code
+        #             with open('/storage/sdb/data/illegal_freq', 'a') as f:
+        #                 f.write(str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date +','+str(t[i]/scan_count)+ ',' + '')
+        #                 f.write('\n')
 
         return 1
 
@@ -170,23 +174,25 @@ class SpectrumStatistics:
             reader = csv.reader(f)
             for i in reader:
                 try:
-                    row = (i[5], float(i[-3]), float(i[-4]), float(i[-1]), i[-7], float(i[-5]))
+                    if self.mscode[0:4] == i[8][0:4]:
+                        row = (i[5], float(i[-3]), float(i[-4]), float(i[-1]), i[-7], float(i[-5]))
+                        print(row)
+                        station.append(row)
                 except Exception as e:
                     pass
-                station.append(row)
         station = tuple(station)
 
         scan_count = 0
         first_frame = next(self.resolve())
-        start_freq = first_frame[0][2]
-        stop_freq = first_frame[0][3]
-        step = first_frame[0][4]
+        # start_freq = first_frame[0][2]
+        # stop_freq = first_frame[0][3]
+        # step = first_frame[0][4]
         code = str(first_frame[0][0]) + '00' + str(first_frame[0][1])
         fp_data_total = np.zeros(first_frame[0][-1])
         cvg_data = np.zeros(first_frame[0][-1])
         time_min = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f').tm_min
-        time_str = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f')
-        date = str(time_str.tm_year)+'-'+str(time_str.tm_mon)+'-'+str(time_str.tm_mday)
+        # time_str = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f')
+        # date = str(time_str.tm_year)+'-'+str(time_str.tm_mon)+'-'+str(time_str.tm_mday)
 
         # res = []
         for i in self.resolve():
@@ -199,60 +205,62 @@ class SpectrumStatistics:
                 scan_count += 1
             else:
                 fp_data_min = (fp_data_total / scan_count).round()
-                index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
-                point = dict(zip(index / 1000000, fp_data_min))
+                # index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
+                # point = dict(zip(index / 1000000, fp_data_min))
                 # time_str = i[0][10]
                 longitude = i[0][-4]
                 latitude = i[0][-3]
                 col, row = coordinate(longitude, latitude)
                 # 将每帧数据经纬度与台站数据库比对
-                freqregion_total = []
+                # freqregion_total = []
                 for j in station:
                     freqregion_start = float(j[-2].split('-')[0])*1000000
                     freqregion_stop = float(j[-2].split('-')[1])*1000000
                     if haversine(longitude/100000000, latitude/100000000, j[1], j[2]) < j[3] and \
                                 self.start_freq < freqregion_start < self.stop_freq or self.start_freq < freqregion_stop < self.stop_freq:
                         staid = j[0]
-                        freqregion = j[-2]
+                        print(staid)
+                        # freqregion = j[-2]
                         cvg = round(sum(cvg_data)/(scan_count*first_frame[0][-1])*100, 2)
                         ocy_data = ocy(fp_data_min, i[0][2], i[0][3], i[0][4])
                         ocy_res = round(sum(ocy_data)/ocy_data.size * 100, 2)
-                        with open('car', 'a') as f:
-                            f.write(code+','+str(col)+','+str(row)+','+j[4]+','+j[5]+','+str(ocy_res)+','+str(cvg))
+                        with open('/storage/sdb/data/car', 'a') as f:
+                            f.write(code+','+str(col)+','+str(row)+','+j[4]+','+staid+','+str(j[5])+','+str(ocy_res)+','+str(cvg))
                             f.write('\n')
-                        # 判断违规频点
-                        station_power = float(j[-1])
-                        for item in point.items():
-                            if item[1] > station_power:
-                                illegal_freq = item[0]
-                                illegal_type = '0'
-                                mfid = code
-                                with open('illegal_freq', 'a') as f:
-                                    f.write(
-                                        str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date + ',' + staid)
-                                    f.write('\n')
-
-                        freqregion_total.append(freqregion)
-                # 判断违规频率, 频点不在监测范围内，并且频点占用度超过3%
-                if freqregion_total:
-                    print('计算违规频率。。。')
-                    section = section_cut(str(self.start_freq / 1000000) + str(self.stop_freq / 1000000), self.step,
-                                          *freqregion_total)
-                    index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
-                    t = dict(zip(index / 1000000, cvg_data.astype(np.int32)))
-                    for i in section:
-                        if t[i] / scan_count > 0.03:
-                            illegal_freq = i
-                            illegal_type = '1'
-                            mfid = code
-                            with open('illegal_freq', 'a') as f:
-                                f.write(str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date + ',' + '')
-                                f.write('\n')
-
-                fp_data_total = np.zeros(first_frame[0][-1])
-                cvg_data = np.zeros(first_frame[0][-1])
-                time_min = time_current.tm_min
-                scan_count = 0
+                #         # 判断违规频点
+                #         station_power = float(j[-1])
+                #         for item in point.items():
+                #             if item[1]/10 > station_power:
+                #                 illegal_freq = item[0]
+                #                 illegal_type = '0'
+                #                 mfid = code
+                #                 with open('/storage/sdb/data/illegal_freq', 'a') as f:
+                #                     f.write(
+                #                         str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date +','+str(item[1]/10)+ ',' + staid)
+                #                     f.write('\n')
+                #
+                #         freqregion_total.append(freqregion)
+                # # 判断违规频率, 频点不在监测范围内，并且频点占用度超过3%
+                # if freqregion_total:
+                #     print('计算违规频率。。。')
+                #     section = section_cut(str(self.start_freq / 1000000) + '-' + str(self.stop_freq / 1000000), self.step,
+                #                           *freqregion_total)
+                #     index = freq_band_index_split(int(start_freq), int(stop_freq), int(step))
+                #     t = dict(zip(index / 1000000, cvg_data.astype(np.int32)))
+                #     for i in section:
+                #
+                #             print(t[i], scan_count)
+                #             illegal_freq = i
+                #             illegal_type = '1'
+                #             mfid = code
+                #             with open('/storage/sdb/data/illegal_freq', 'a') as f:
+                #                 f.write(str(illegal_freq) + ',' + illegal_type + ',' + mfid + ',' + date +','+str(t[i]/scan_count)+ ',' + '')
+                #                 f.write('\n')
+                #
+                # fp_data_total = np.zeros(first_frame[0][-1])
+                # cvg_data = np.zeros(first_frame[0][-1])
+                # time_min = time_current.tm_min
+                # scan_count = 0
 
         return 1
 
@@ -273,7 +281,9 @@ class SpectrumStatistics:
             self.monitoring_facility_data_file()
         else:
             self.monitoring_car_data_min()
-        print(self.file.name)
+        with open('process', 'a') as f:
+            f.write(self.file.name)
+            f.write('\n')
 
 
 def freq_band_index_split(start_freq, stop_freq, step):
@@ -304,6 +314,7 @@ def ocy(fp_data, start_freq, stop_freq, step):
     计算每一帧频点是否超过门限，返回bool数组
     单位  hz
     """
+    fp_data = list(np.array(fp_data)/10)
     so = CInvoker(fp_data, start_freq / 1000, stop_freq / 1000, step / 1000)
     auto = so.auto_threshold()
     np_fp_data = np.array(fp_data)
@@ -391,7 +402,8 @@ def section_cut(freq_band, step, *args):
 
 if __name__ == '__main__':
 
-    files = traverse_file.get_all_file('/storage/sdb/data', 'bin')
+    start = time.time()
+    files = traverse_file.get_all_file('/storage/sdb/data/', 'bin')
     count = 0
     for i in files:
         name = os.path.basename(i)
@@ -399,4 +411,7 @@ if __name__ == '__main__':
             SpectrumStatistics(i).calc()
             count += 1
             print(count)
+            print(os.path.getsize(i))
+        break
+    print(time.time()-start)
 
