@@ -73,12 +73,22 @@
 #         row = (float(i[-4]),float(i[-3]),float(i[-1]),i[-7])
 #         station.append(row)
 # station = tuple(station)
-from spectrum_evaluate import SpectrumStatistics
 
-file = './data/spectrumstatics/52260000_0001_20180904_104324_780MHz_980MHz_12.5kHz_V_M.bin'
-count = 0
-for i in SpectrumStatistics(file).resolve():
-    print(i)
-    break
-    count += 1
-print(count)
+
+# from spectrum_evaluate import SpectrumStatistics
+#
+# file = './data/spectrumstatics/52230000_0018_20180817_042719_780MHz_980MHz_13kHz_V_F.bin'
+# count = 0
+# for i in SpectrumStatistics(file).resolve():
+#     print(i)
+#     break
+#     count += 1
+# print(count)
+
+# import pandas as pd
+# file = './data/station.csv'
+#
+# data = pd.read_csv(file)
+# for i in data.values:
+#     print(i)
+#     break
