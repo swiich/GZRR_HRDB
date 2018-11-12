@@ -11,6 +11,7 @@ def download_file(hdfs_location, file_local):
     :param hdfs_location: hdfs路径+文件名
     :param file_local: 本地路径+文件名
     """
+    # 可以用 try finally提高可读性
     client = hdfs.Client('http://172.39.8.61:50070', root='/', timeout=10)
     try:
         with client.read(hdfs_location) as r:

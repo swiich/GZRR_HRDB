@@ -3,9 +3,6 @@ from watchdog.events import *
 from tools.signal_handler import *
 from tools.file_info import file_index, des_save, xml_parser, get_file_info
 from tools.MyThread import MyThread
-# import sys
-# sys.path.append('/root/home/gzrr/project')
-# import configuration as conf
 
 
 class FileEventHandler(FileSystemEventHandler):
@@ -33,7 +30,7 @@ class FileEventHandler(FileSystemEventHandler):
                                 if currentl == oldl:
                                     break
                             # 移除小于20M的监测文件
-                            if os.path.getsize(file_bin)/1024**2 < 20:
+                            if os.path.getsize(file_bin) < 20971520:
                                 os.remove(file_des)
                                 os.remove(file_bin)
                                 print('file removed...')
@@ -51,31 +48,40 @@ class FileEventHandler(FileSystemEventHandler):
                     file_size_min = file_info[-1]
                     data_type = file_info[2]
 
-                    t1 = MyThread(func=file_resolve, args=(file_bin, mfid, start_freq, stop_freq, file_size_min, data_type))
+                    file_resolve(file_bin, mfid, start_freq, stop_freq, file_size_min, data_type)
+                    # t1 = MyThread(func=file_resolve, args=(file_bin, mfid, start_freq, stop_freq, file_size_min, data_type))
                     t2 = MyThread(file_index, (file_bin, file_des, 'file_index'))
                     t3 = MyThread(file_index, (file_bin, file_des, 'task_info'))
                     t4 = MyThread(file_index, (file_bin, file_des, 'device_info'))
-                    # t5 = MyThread(des_save, (file_des,))
+                    t5 = MyThread(des_save, (file_des,))
 
-                    t1.start()
+                    # t1.start()
                     t2.start()
                     t3.start()
                     t4.start()
-                    # t5.start()
+                    t5.start()
 
-                    res = [t1, t2, t3, t4]
+                    # res = [t1, t2, t3, t4, t5]
+                    res = [t2, t3, t4, t5]
                     for t in res:
                         t.join()
                         print('done')
                         # print(t.get_result())
                     os.remove(file_bin)
                     os.remove(file_des)
+
+                    # 记录正常处理后文件
+                    with open('/home/fileresolve_log/correct.log', 'a') as f:
+                        f.write(os.path.basename(file_des)+'--'+os.path.basename(file_bin)+'\n')
+
             except Exception as e:
-                print(e)
+                with open('/home/fileresolve_log/error.log', 'a') as f:
+                    f.write(os.path.basename(file_bin)+'--'+str(e)+'\n')
+                print('error at: ' + file_bin)
 
 
 if __name__ == '__main__':
-    # TODO: 移动车经纬度    file_resolve函数不能从文件名中取mfid
+
     observer = Observer()
     event_handler = FileEventHandler()
     observer.schedule(event_handler, '/home/ftp', True)

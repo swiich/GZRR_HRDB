@@ -7,7 +7,6 @@ import numpy as np
 from math import radians, cos, sin, asin, sqrt
 from tools import traverse_file
 import time
-# import hive_connector as hc
 import uuid
 
 
@@ -21,7 +20,6 @@ class SpectrumStatistics:
         self.file = open(file, 'rb')
         self.mscode = f_name[0]
         self.mfcode = f_name[1]
-        # self.file_create_time = f_name[2] + f_name[3]
         self.start_freq = float(f_name[4].split('M')[0])*1000000
         self.stop_freq = float(f_name[5].split('M')[0])*1000000
         self.step = float(f_name[6].split('k')[0])*1000
@@ -76,10 +74,6 @@ class SpectrumStatistics:
         """
         将固定站数据每个文件合并为一帧
         """
-        # 将台站库存入内存，避免多次查询
-        # cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
-        # sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
-        # station = hc.execute_sql(cursor, sql)
 
         first_frame = next(self.resolve())
         time_str = time.strptime(first_frame[0][10], '%Y-%m-%d %H:%M:%S.%f')
@@ -111,16 +105,6 @@ class SpectrumStatistics:
         with open('/storage/sdb/data/facility', 'a') as f:
             f.write(str(uuid.uuid1())+'|'+mfid+'|'+str(longitude) + '|' + str(latitude) + '|' + date + '|' + str(scan_count) + '|' + str(activepoint) + '|' + str(amp_dict))
             f.write('\n')
-        # # 匹配台站
-        # for j in station:
-        #     if haversine(longitude / 100000000, latitude / 100000000, j[0], j[1]) < j[2]:
-        #         guid = uuid.uuid1()
-        #         freqregion = j[3]
-        #         staid = j[4]
-        #         activepoint = freq_band_split(t, int(freqregion.split('-')[0]), int(freqregion.split('-')[1]))
-        #         with open('facility', 'a') as f:
-        #             f.write(str(guid)+'|'+freqregion+'|'+staid+'|'+date+'|'+str(scan_count)+'|'+str(activepoint))
-        #             f.write('\n')
 
         return 1
 
@@ -128,10 +112,6 @@ class SpectrumStatistics:
         """
         将监测车数据每分钟合并为一帧
         """
-        # 将台站库存入内存，避免多次查询
-        # cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
-        # sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
-        # station = hc.execute_sql(cursor, sql)
 
         scan_count = 0
         first_frame = next(self.resolve())
@@ -155,32 +135,17 @@ class SpectrumStatistics:
 
                 cvg_data += ocy(i[1], i[0][2], i[0][3], i[0][4])
             else:
-                # fp_data_min = (fp_data_total / scan_count).round()
                 time_str = i[0][10]
                 longitude = i[0][-4]
                 latitude = i[0][-3]
-                # col, row = coordinate(longitude, latitude)
                 t = dict(zip(index / 1000000, cvg_data))
                 freqregion = str(int(self.start_freq / 1000000)) + '-' + str(int(self.stop_freq / 1000000))
                 activepoint = freq_band_split(t, int(freqregion.split('-')[0]), int(freqregion.split('-')[1]))
                 amp_dict = dict(zip(index / 1000000, current_max))
-                # cvg = round(sum(cvg_data)/(scan_count*first_frame[0][-1])*100, 2)
-                # ocy_data = ocy(fp_data_min, i[0][2], i[0][3], i[0][4])
-                # ocy_res = round(sum(ocy_data)/ocy_data.size * 100, 2)
                 with open('/storage/sdb/data/car', 'a') as f:
                     f.write(str(uuid.uuid1())+'|'+mfid+'|'+str(longitude)+'|'+str(latitude)+'|'+time_str+'|'+str(scan_count)+'|'+str(activepoint)+'|'+str(amp_dict))
                     f.write('\n')
-                # # 将每帧数据经纬度与台站数据库比对
-                # for j in station:
-                #     if haversine(longitude/100000000, latitude/100000000, j[0], j[1]) < j[2]:
-                #         cvg = round(sum(cvg_data)/(scan_count*first_frame[0][-1])*100, 2)
-                #         ocy_data = ocy(fp_data_min, i[0][2], i[0][3], i[0][4])
-                #         ocy_res = round(sum(ocy_data)/ocy_data.size * 100, 2)
-                #         with open('car', 'a') as f:
-                #             f.write(str(col)+','+str(row)+','+j[3]+','+j[4]+','+str(ocy_res)+','+str(cvg))
-                #             f.write('\n')
 
-                amp_dict = {}
                 fp_data_total = np.zeros(first_frame[0][-1])
                 cvg_data = np.zeros(first_frame[0][-1])
                 time_min = time_current.tm_min
@@ -259,18 +224,6 @@ def remove_null_from_dict(d):
     return res
 
 
-# def match_stationid(longitude, latitude):
-#     """
-#     通过经纬度匹配频段区域，台站id
-#     """
-#     cursor = hc.get_hive_cursor('172.18.140.8', 'spectrum_evaluation')
-#     sql = "select stat_lg,stat_la,st_serv_r,freqregion,staid from station"
-#     res = hc.execute_sql(cursor, sql)
-#     for i in res:
-#         if haversine(longitude, latitude, i[0], i[1]) < i[2]:
-#             yield i[3], i[4]
-
-
 def coordinate(longitude, latitude):
     """
     返回地图网格row,column
@@ -305,7 +258,7 @@ def haversine(lon1, lat1, lon2, lat2):
 
 def maximun(a1, a2):
     """
-    将数组a1,a2每个点一一对比，取出较大的替换a1中的值
+    将数组a1,a2每个点一一对比，取每次比较的较大值生成新数组
     """
     res = np.maximum(np.array(a1), np.array(a2))
 
