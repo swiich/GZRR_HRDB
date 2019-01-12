@@ -2,11 +2,12 @@
 
 import xml.etree.cElementTree as Et
 from tools.signal_handler import *
-from tools.file_info import file_index, des_save, xml_parser, get_file_info
+from tools.file_info import file_index, des_save, xml_parser, get_file_info, MBasicDataTable
 from tools.MyThread import MyThread
 from tools.traverse_file import get_all_file
 import os
 import time
+import datetime
 import sys
 import shutil
 
@@ -32,7 +33,7 @@ standard = {
 
 def feature_modify(xml_file):
     """
-    将描述文件中feature按照原子服务2.0规范修改
+    将描述文件中feature按照原子服务2.0规范修正
     """
     root = Et.parse(xml_file)
     feature = root.getroot().find('result').find('feature')
@@ -74,10 +75,25 @@ class WatchDog():
                             if currentl == oldl:
                                 break
 
-                        # 移除小于20M的监测文件
-                        if os.path.getsize(file_bin) < 20971520:
+                        # # 移除小于20M的监测文件                    Modified: 改为监测时长小于1分钟移除
+                        # if os.path.getsize(file_bin) < 20971520:
+                        #     os.remove(file_xml)
+                        #     os.remove(file_bin)
+                        #     print('file removed...')
+                        #     continue
+
+                        # 移除监测时长小于1分钟文件
+                        first_frame_h, p = MBasicDataTable(file_bin).header_payload().__next__()
+                        first_frame_datetime = datetime.datetime.strptime(first_frame_h[0], '%Y-%m-%d %H:%M:%S.%f')
+                        for head, pl in MBasicDataTable(file_bin).header_payload():
+                            end_frame = head
+                        end_frame_datetime = datetime.datetime.strptime(end_frame, '%Y-%m-%d %H:%M:%S.%f')
+                        if (end_frame_datetime - first_frame_datetime).seconds <= 60:
                             os.remove(file_xml)
                             os.remove(file_bin)
+                            with open('/home/fileresolve_log/removed.log', 'a') as f:
+                                f.write(file_bin+'removed----')
+                                f.write(str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))+'\n')
                             print('file removed...')
                             continue
 

@@ -150,6 +150,8 @@ def freq_avg(frame_list, avg_count):
 
         current_channel_count = current_frame[1][8]
         while current_channel_count < current_frame[1][3]:
+            if not frame_list:
+                break
             next_frame = frame_list.pop(0)
             current_channel_count += next_frame[1][8]
             tmp = combine_frame(current_frame, next_frame)
@@ -190,15 +192,18 @@ def get_businessid(start_freq, stop_freq):
         start_freq, stop_freq
     )
     res = hc.execute_sql(cursor, sql)
+    # flag: 表中是否有当前业务编号
+    flag = True
     # 若表中无对应数据，生成自定义频段
     if not res:
         res = uuid.uuid1()
-        sql = 'insert into table rmbt_service_freqdetail ' \
-              'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
-               res, start_freq, stop_freq)
-        hc.execute_sql_insert(cursor, sql)
+        flag = False
+        # sql = 'insert into table rmbt_service_freqdetail ' \
+        #       'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
+        #        res, start_freq, stop_freq)
+        # hc.execute_sql_insert(cursor, sql)
 
-    return res
+    return res, flag
 
 
 def file_resolve(file, mfid, start_freq, stop_freq, file_size_min, data_type):
@@ -211,6 +216,7 @@ def file_resolve(file, mfid, start_freq, stop_freq, file_size_min, data_type):
     frame_count = 0
     fp_data_total = []
     auto_total = []
+    sb_list = []
 
     time_tmp = time.localtime(time.mktime(time.strptime(next(Read(file).header_payload())[0][3], '%Y-%m-%d %H:%M:%S.%f')))
     time_tmp = time_tmp.tm_min
@@ -224,8 +230,9 @@ def file_resolve(file, mfid, start_freq, stop_freq, file_size_min, data_type):
     # start_freq = frame[1][4]/1000
     # stop_freq = frame[1][5]/1000
     step = frame[1][7]
+
     # 通过起始结束频率查询监测业务编号
-    bid_tmp = get_businessid(start_freq, stop_freq)
+    bid_tmp, flag = get_businessid(start_freq, stop_freq)
     businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
 
     frame_list = []
@@ -260,16 +267,26 @@ def file_resolve(file, mfid, start_freq, stop_freq, file_size_min, data_type):
                 fp_np = np.array(fp_data)
                 auto_total.append(auto_np)
                 fp_data_total.append(fp_np)
+                # add func - find max of signalband
+                sb_list.append(sb)
 
                 sigDetectResult = np.array([cf, cfi, cfa, snr, sb])
                 # 将信号写入文件
-                signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
-
+                try:
+                    signal_to_csv(mfid, frame[0][3], sig_count, sigDetectResult)
+                except TypeError:
+                    print('no signal detected')
             else:
-                print(sig_count)
+                continue
 
         else:
             amp_struct_info = amp_info(fp_data_total, auto_total)
+            # add func - find max of sigbalband
+            sb_array = np.array(sb_list)
+            print(sb_array)
+            sb_max = sb_array.max()
+            print(sb_max)
+
             print('总扫描帧数量 {0}'.format(frame_count))
 
             fp_data_total = []
@@ -290,11 +307,19 @@ def file_resolve(file, mfid, start_freq, stop_freq, file_size_min, data_type):
                     ))
                     f.write('\n')
 
+    # 数据库中没有当前business_id则插入
+    if not flag:
+        cursor = hc.get_hive_cursor('172.18.140.8', 'rmdsd')
+        sql = 'insert into table rmbt_service_freqdetail ' \
+              'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
+               businessid, start_freq, stop_freq)
+        hc.execute_sql_insert(cursor, sql)
+
     try:
         shutil.move('/var/dropzone/amp_info.min.tmp', '/var/dropzone/amp_info.min')
         shutil.move('/var/dropzone/signal.tmp', '/var/dropzone/signal')
     except shutil.Error as msg:
-        print(msg)
+        print('file_resolve error---'+msg)
 
     print('file resolved...')
 

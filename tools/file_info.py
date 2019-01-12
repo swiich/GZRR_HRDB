@@ -137,8 +137,14 @@ def xml_parser(xml_file, return_type):
     res_list = xml_root.find('list').find('segment')
     start_freq = float(res_list.find('startfreq').text)
     stop_freq = float(res_list.find('stopfreq').text)
-    bid_tmp = get_businessid(start_freq/1000000, stop_freq/1000000)
+    bid_tmp, flag = get_businessid(start_freq/1000000, stop_freq/1000000)
     businessid = bid_tmp[0][0] if isinstance(bid_tmp, list) else bid_tmp
+    if not flag:
+        cursor = hc.get_hive_cursor('172.18.140.8', 'rmdsd')
+        sql = 'insert into table rmbt_service_freqdetail ' \
+              'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
+               businessid, start_freq/1000000, stop_freq/1000000)
+        hc.execute_sql_insert(cursor, sql)
     paramxml_str, t_start_time, t_stop_time = ws.query_tasks(taskid)
 
     if return_type == 'file_index':
@@ -209,3 +215,16 @@ def des_save(xml_file):
     # except Exception as e:
     #     print("error at des_save ", e)
     #     return False
+
+
+def headtail_time(file):
+    """
+
+    获取文件的首位时间
+
+    """
+    start_time = next(MBasicDataTable(file).header_payload())[0]
+    for frame in MBasicDataTable(file).header_payload():
+        end_time = frame[0]
+
+    return start_time, end_time

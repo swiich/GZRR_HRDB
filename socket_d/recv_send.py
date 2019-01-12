@@ -51,11 +51,15 @@ def deal_data(conn, addr):
             print('send file from local cache...')
             send.socket_send(conn, file_local)
         conn.close()
+        # 不需要把文件缓存到本地，浪费空间
+        os.remove(file_local)
 
     except IndexError:
         print("I can't find any file with current dataguid !")
     except ConnectionResetError as msg:
         print(msg)
+    except Exception as e:
+        print(e)
 
 
 if __name__ == '__main__':
