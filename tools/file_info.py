@@ -101,13 +101,12 @@ def file_index(file, file_des, return_type):
         result = (des_result[0], des_result[1], des_result[9], des_result[2], des_result[3],
                   des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8], des_result[9])
         if des_result[9] == 'finished':
-            sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
-                  "'{5}','{6}','{7}','{8}','{9}', '{10}') partition (status=1)".format(*result)
+            sql = "insert into table taskinfo partition (status=1) values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}')".format(*result)
         else:
-            result = (des_result[0], des_result[1], des_result[9], des_result[2], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                      des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8], des_result[9])
-            sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
-                  "'{5}','{6}','{7}','{8}','{9}', '{10}') partition (status=0)".format(*result)
+            result[4] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            sql = "insert into table taskinfo partition (status=0) values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}')".format(*result)
 
         sql_filter = 'select * from taskinfo where taskid="{0}" and equid="{1}"'.format(des_result[0], des_result[2])
 
@@ -155,14 +154,13 @@ def xml_parser(xml_file, return_type):
         hc.execute_sql_insert(cursor, sql)
     paramxml_str, t_start_time, t_stop_time, status = ws.query_tasks(taskid)
 
-    if return_type == 'file_index':
-        result = (dataguid, taskid, equid, t_start_time, t_stop_time, businessid, mfid)
-    elif return_type == 'task_info':
-        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid, mfid, status)
-    elif return_type == 'device_info':
-        result = (areacode, mfname, equid, equname, feature, mfid)
-    elif return_type == 'b_info':
-        result = (mfid, start_freq, stop_freq)
+    return_dict = {
+        'file_index': (dataguid, taskid, equid, t_start_time, t_stop_time, businessid, mfid),
+        'task_info': (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid, mfid, status),
+        'device_info': (areacode, mfname, equid, equname, feature, mfid),
+        'b_info': (mfid, start_freq, stop_freq)
+    }
+    result = return_dict[return_type]
 
     return result
 
@@ -236,3 +234,26 @@ def headtail_time(file):
         end_time = frame[0]
 
     return start_time, end_time
+
+
+def update_tasktime():
+    """
+
+    更新波尔接口中status不为finished的taskinfo
+
+    """
+    cursor = hc.get_hive_cursor('172.39.8.60', 'db_data_store')
+    sql = 'select * from taskinfo where status=0'
+    task_list = hc.execute_sql(cursor, sql)
+    hc.execute_sql_insert(cursor, 'alter table taskinfo drop partition (status=0)')
+    for task in task_list:
+        paramxml, start_time, stop_time, status = ws.query_tasks(task[0])
+        if status == 'finished':
+            task[4] = stop_time
+            sql = "insert overwrite table taskinfo partition (status=1) values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}') ".format(*task)
+            hc.execute_sql_insert(cursor, sql)
+        else:
+            sql = "insert into table taskinfo partition (status=0) values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}') ".format(*task)
+            hc.execute_sql_insert(cursor, sql)

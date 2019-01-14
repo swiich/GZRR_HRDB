@@ -95,5 +95,5 @@
 #         return payload
 # a = next(MBasicDataTable('52010000120021_f3020516-27c3-4654-b098-9c67c92e90a1_b1925d45-36bb-42a2-984a-3db50c6cbe9c_20190104153324.bin').header_payload())
 # print(a)
-import datetime
-print(type(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+a = (1,"2526",00,'2-2-2-')
+print('{0}, {1}- {2}+ {3}""'.format(*a))
