@@ -46,52 +46,54 @@
 # timestr = '2018-10-10 13:51:30.545000'
 # date = datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S.%f')
 # print(date)
-import numpy as np
-from tools.analyse_stream import Read
-class MBasicDataTable(Read):
-    # def __init__(self, file_name):
-    #     super(MBasicDataTable, self).__init__(file_name)
-        # self.file_name = file_name
-
-    def header_payload(self):
-        file = open(self.file_name, 'rb')
-        while True:
-            leader = file.read(4)
-            if not leader:                # 判断是否读取到文件末
-                break
-            file.read(6)
-            ts = [np.frombuffer(file.read(2), np.uint16)[0]]
-            for i in np.frombuffer(file.read(5), np.uint8):
-                ts.append(i)
-            ts.append(np.frombuffer(file.read(2), np.uint16)[0])    # 年 月 日 时 分 秒 毫秒
-            pl = np.frombuffer(file.read(4), np.uint32)[0]
-            el = np.frombuffer(file.read(1), np.uint8)[0]            # 扩展帧长度
-
-            ts_str = "{0}-{1}-{2} {3}:{4}:{5}.{6}".format(*ts)
-
-            if el:
-                file.read(el)                        # 扩展帧头ExHeader
-
-            payload = self.get_last_time(file, pl)
-
-            head = (ts_str, payload)
-            yield head
-
-        file.close()
-
-    @staticmethod
-    def get_last_time(file, payload_len):
-        """频谱数据"""
-        payload = 0
-        while payload_len:
-
-            dt = np.frombuffer(file.read(1), np.uint8)[0]
-            dl = np.frombuffer(file.read(4), np.uint32)[0]
-
-            file.read(dl)
-            payload = dt
-
-            payload_len -= dl + 5
-        return payload
-a = next(MBasicDataTable('52010000120021_f3020516-27c3-4654-b098-9c67c92e90a1_b1925d45-36bb-42a2-984a-3db50c6cbe9c_20190104153324.bin').header_payload())
-print(a)
+# import numpy as np
+# from tools.analyse_stream import Read
+# class MBasicDataTable(Read):
+#     # def __init__(self, file_name):
+#     #     super(MBasicDataTable, self).__init__(file_name)
+#         # self.file_name = file_name
+#
+#     def header_payload(self):
+#         file = open(self.file_name, 'rb')
+#         while True:
+#             leader = file.read(4)
+#             if not leader:                # 判断是否读取到文件末
+#                 break
+#             file.read(6)
+#             ts = [np.frombuffer(file.read(2), np.uint16)[0]]
+#             for i in np.frombuffer(file.read(5), np.uint8):
+#                 ts.append(i)
+#             ts.append(np.frombuffer(file.read(2), np.uint16)[0])    # 年 月 日 时 分 秒 毫秒
+#             pl = np.frombuffer(file.read(4), np.uint32)[0]
+#             el = np.frombuffer(file.read(1), np.uint8)[0]            # 扩展帧长度
+#
+#             ts_str = "{0}-{1}-{2} {3}:{4}:{5}.{6}".format(*ts)
+#
+#             if el:
+#                 file.read(el)                        # 扩展帧头ExHeader
+#
+#             payload = self.get_last_time(file, pl)
+#
+#             head = (ts_str, payload)
+#             yield head
+#
+#         file.close()
+#
+#     @staticmethod
+#     def get_last_time(file, payload_len):
+#         """频谱数据"""
+#         payload = 0
+#         while payload_len:
+#
+#             dt = np.frombuffer(file.read(1), np.uint8)[0]
+#             dl = np.frombuffer(file.read(4), np.uint32)[0]
+#
+#             file.read(dl)
+#             payload = dt
+#
+#             payload_len -= dl + 5
+#         return payload
+# a = next(MBasicDataTable('52010000120021_f3020516-27c3-4654-b098-9c67c92e90a1_b1925d45-36bb-42a2-984a-3db50c6cbe9c_20190104153324.bin').header_payload())
+# print(a)
+import datetime
+print(type(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))

@@ -36,11 +36,12 @@ def query_tasks(taskid):
 
     t_start_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('starttime').text, "%Y%m%d%H%M%S")))
     t_stop_time = strftime('%Y-%m-%d %H:%M:%S', (strptime(task.find('stoptime').text, "%Y%m%d%H%M%S")))
+    status = task.find('status').text
 
     paramxml_str = Et.tostring(paramxml, 'utf-8').decode().\
         replace('\n', '').replace('\t', '').replace('<paramxml>', '').replace(' ', '').replace('</paramxml>', '')
 
-    return paramxml_str, t_start_time, t_stop_time
+    return paramxml_str, t_start_time, t_stop_time, status
 
 
 def query_device(mfid, equid):

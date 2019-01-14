@@ -91,38 +91,6 @@ def amp_info(fps_total, auto_total):
     return sig_info
 
 
-# def freq_avg(file, avg_count):
-#     """
-#
-#     传入avg_count帧数据，返回平均值
-#
-#     """
-#
-#     np_data_total = []
-#     counter = avg_count
-#     for frame in file:
-#         if not frame[1]:
-#             continue
-#
-#         fp_data = np.array(list(map(lambda x: float(x) / 10, frame[1][-1])))
-#         np_data_total.append(fp_data)
-#
-#         counter -= 1
-#         if not counter:
-#
-#             tmp = np.zeros(shape=(1, len(np_data_total[0])))
-#             for i in np_data_total:
-#                 tmp += i
-#
-#             fp_data = (tmp/avg_count).round(1)
-#
-#             counter = avg_count
-#             np_data_total = []
-#
-#             frame[1][-1] = fp_data[0]
-#             yield frame
-
-
 def freq_avg(frame_list, avg_count):
     """
 

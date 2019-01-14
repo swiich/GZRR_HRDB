@@ -3,6 +3,7 @@ import os
 import numpy as np
 import xml.etree.cElementTree as Et
 import time
+import datetime
 import hive_connector as hc
 from tools.signal_handler import get_businessid
 from tools import webservice as ws
@@ -98,9 +99,16 @@ def file_index(file, file_des, return_type):
         sql_filter = 'select * from deviceinfo where mfid="{0}" and equid="{1}"'.format(des_result[5], des_result[2])
     elif return_type == 'task_info':
         result = (des_result[0], des_result[1], des_result[9], des_result[2], des_result[3],
-                  des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8])
-        sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
-              "'{5}','{6}','{7}','{8}','{9}')".format(*result)
+                  des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8], des_result[9])
+        if des_result[9] == 'finished':
+            sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}') partition (status=1)".format(*result)
+        else:
+            result = (des_result[0], des_result[1], des_result[9], des_result[2], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                      des_result[4], des_result[5], des_result[6], des_result[7],  des_result[8], des_result[9])
+            sql = "insert into table taskinfo values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}', '{10}') partition (status=0)".format(*result)
+
         sql_filter = 'select * from taskinfo where taskid="{0}" and equid="{1}"'.format(des_result[0], des_result[2])
 
     cursor = hc.get_hive_cursor('172.39.8.60', 'db_data_store')
@@ -145,12 +153,12 @@ def xml_parser(xml_file, return_type):
               'values ("{0}","00000000-0000-0000-0000-000000000000","{1}-{2}Mhz",{1},{2},25.0)'.format(
                businessid, start_freq/1000000, stop_freq/1000000)
         hc.execute_sql_insert(cursor, sql)
-    paramxml_str, t_start_time, t_stop_time = ws.query_tasks(taskid)
+    paramxml_str, t_start_time, t_stop_time, status = ws.query_tasks(taskid)
 
     if return_type == 'file_index':
         result = (dataguid, taskid, equid, t_start_time, t_stop_time, businessid, mfid)
     elif return_type == 'task_info':
-        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid, mfid)
+        result = (taskid, feature, equid, t_start_time, t_stop_time, userid, paramxml_str, appid, dataguid, mfid, status)
     elif return_type == 'device_info':
         result = (areacode, mfname, equid, equname, feature, mfid)
     elif return_type == 'b_info':
@@ -174,7 +182,7 @@ def des_save(xml_file):
     equid = xml_root.find('equid').text
     mfname, equname, equmodel, feature_list = ws.query_device(mfid, equid)
     feature = xml_root.find('feature').text
-    paramxml_str, t_start_time, t_stop_time = ws.query_tasks(taskid)
+    paramxml_str, t_start_time, t_stop_time, status = ws.query_tasks(taskid)
     appid = xml_root.find('appid').text
     userid = xml_root.find('userid').text
     dataguid = os.path.basename(xml_file).split('.')[0]
