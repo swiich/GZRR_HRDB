@@ -44,10 +44,11 @@ class Read:
 
             if dt == 12:
                 payload = self.fsc(file, dl, dt)
-            # elif dt == 18:
-            #     payload = self.antenna(file, dl, dt)
             else:
-                file.read(dl)
+                if dt == 18:
+                    payload = self.antenna(file, payload_len, dt)
+                else:
+                    file.read(dl)
 
             # func_map = {7: self.spm, 12: self.fsc, 1: self.position, 18: self.antenna}
             # payload.append(func_map[dt](file, dl, dt))

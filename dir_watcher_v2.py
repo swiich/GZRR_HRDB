@@ -2,7 +2,7 @@
 
 import xml.etree.cElementTree as Et
 from tools.signal_handler import *
-from tools.file_info import file_index, des_save, xml_parser, get_file_info, MBasicDataTable
+from tools.file_info import file_index, des_save, xml_parser, get_file_info, MBasicDataTable, update_tasktime
 from tools.MyThread import MyThread
 from tools.traverse_file import get_all_file
 import os
@@ -10,6 +10,8 @@ import time
 import datetime
 import sys
 import shutil
+
+
 
 standard = {
     'b_sglfreqmeas': 'B_SglFreqMeas', 'b_wbfftmon': 'B_WBFFTMon',
@@ -53,8 +55,9 @@ class WatchDog():
         self.path = path
 
     def on_created(self):
-        file_bin_list = get_all_file(self.path, 'bin')
-        file_xml_list = get_all_file(self.path, 'xml')
+        # 获取文件名，并按照时间顺序排序
+        file_bin_list = sorted(get_all_file(self.path, 'bin'), key=lambda x: x.split('_')[-1].split('.')[0], reverse=True)
+        file_xml_list = sorted(get_all_file(self.path, 'xml'), key=lambda x: x.split('_')[-1].split('.')[0], reverse=True)
         if not file_bin_list:
             sys.stdout.write('\rNo task to be processed now, directory is empty... every 10 secs to get tasks...')
             sys.stdout.flush()
@@ -123,12 +126,15 @@ class WatchDog():
                         res = [t2, t3, t4, t5]
                         for t in res:
                             t.join()
+
+                        update_tasktime()
+
                         os.remove(file_bin)
                         os.remove(file_xml)
 
                         # 记录正常处理后文件
                         with open('/home/fileresolve_log/correct.log', 'a') as f:
-                            f.write(os.path.basename(file_xml) + '--' + os.path.basename(file_bin) + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) +'\n')
+                            f.write(os.path.basename(file_xml) + '|' + os.path.basename(file_bin) + '|' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) +'\n')
 
             except Exception as e:
                 # 异常日志

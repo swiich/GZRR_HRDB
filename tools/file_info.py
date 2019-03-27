@@ -104,7 +104,8 @@ def file_index(file, file_des, return_type):
             sql = "insert into table taskinfo partition (status=1) values ('{0}','{1}','{2}','{3}','{4}'," \
                   "'{5}','{6}','{7}','{8}','{9}', '{10}')".format(*result)
         else:
-            result[4] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            result = list(result)
+            result[5] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             sql = "insert into table taskinfo partition (status=0) values ('{0}','{1}','{2}','{3}','{4}'," \
                   "'{5}','{6}','{7}','{8}','{9}', '{10}')".format(*result)
 
@@ -249,11 +250,13 @@ def update_tasktime():
     for task in task_list:
         paramxml, start_time, stop_time, status = ws.query_tasks(task[0])
         if status == 'finished':
-            task[4] = stop_time
-            sql = "insert overwrite table taskinfo partition (status=1) values ('{0}','{1}','{2}','{3}','{4}'," \
-                  "'{5}','{6}','{7}','{8}','{9}', '{10}') ".format(*task)
+            task = list(task)
+            task[4] = start_time
+            task[5] = stop_time
+            sql = "insert into table taskinfo partition (status=1) values ('{0}','{1}','{2}','{3}','{4}'," \
+                  "'{5}','{6}','{7}','{8}','{9}') ".format(*task)
             hc.execute_sql_insert(cursor, sql)
         else:
             sql = "insert into table taskinfo partition (status=0) values ('{0}','{1}','{2}','{3}','{4}'," \
-                  "'{5}','{6}','{7}','{8}','{9}', '{10}') ".format(*task)
+                  "'{5}','{6}','{7}','{8}','{9}') ".format(*task)
             hc.execute_sql_insert(cursor, sql)
